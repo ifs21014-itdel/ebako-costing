@@ -162,11 +162,12 @@
 
                                         <th style="border:1px solid black;">Model / Sketch</th>
                                         <th style="border:1px solid #000;padding: 5px;max-width: 70px;width: 70px;word-wrap:break-word;">Finishes</th>
-
+                                        <?php if (isset($quotation[0]->parent_sales_quotes_id) && (int) $quotation[0]->parent_sales_quotes_id !== 0): ?>
+                                            <th style="border:1px solid black;">FOB Price Before</th>
+                                        <?php endif; ?>
                                         <th style="border:1px solid #000;padding: 5px;max-width: 150px;width: 150px;word-wrap:break-word;" >Unit Price (USD, FOB Semarang)</th>
                                         <th style="border:1px solid black;">Quantity</th>
                                         <th style="border:1px solid black;">Remarks</th>
-                                      
 
                                     </tr>
                                 </thead>
@@ -206,6 +207,14 @@
                                         echo "<font color=red>";
                                 }
                                 echo $result->q_finishes;
+                                ?> 
+                            </td>
+                            <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
+                                <?php
+                                if ($insurance > 0) {
+                                    $result->  fob_price_before = ($result->  fob_price_before) / ((100 - $insurance) * 0.01);
+                                }
+                                echo number_format(round($result->  fob_price_before)) . ".00";
                                 ?> 
                             </td>
                             <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
@@ -459,5 +468,11 @@
 </table>
 </div>
 </body>
+<script>
+    const parentSalesQuotesId = Number(<?= json_encode($quotation[0]->parent_sales_quotes_id) ?>);
+    console.log("parent_sales_quotes_id:", parentSalesQuotesId);
+    console.log("Apakah !== 0 ?", parentSalesQuotesId !== 0);
+</script>
+
 
 </html>

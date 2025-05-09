@@ -43,7 +43,18 @@
                     style="width: 305px;background-color: #fbfbfb;border: 1px solid #aeb5c5;" class="form-control-sm" required />
             </td>
         </tr>
-       
+        <tr>
+            <td align="right">
+                <label class="labelelement">
+                    <span style="color: red;">*&nbsp;</span>Quantity :
+                </label>
+            </td>  
+            <td>
+                <input type="number" id="quantity" name="quantity" 
+                    style="width: 305px;background-color: #fbfbfb;border: 1px solid #aeb5c5;" class="form-control-sm" required />
+            </td>
+        </tr>
+
 
         
      <!-- Fragment dari form Anda -->

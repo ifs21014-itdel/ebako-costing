@@ -1,11 +1,12 @@
 var bbox;
 function pro_view(){
-	productprice_search(0);
+    productprice_search(0);
     my_y_position = 0;
 }
+
 function productprice_createnew(){
     App.createContainer('productprice_temp');
-    bbox = bootbox.dialog({ // Initialize bbox here
+    bbox = bootbox.dialog({
         title: 'Create Product Price',
         message: $('#productprice_temp'),
         closeButton: true,
@@ -21,25 +22,23 @@ function productprice_createnew(){
     });
 }
 
-
 function pro_model_choose(){
-	//App.modalForm.create({'element':'costing_model','title':'Select Model','large':true, 'url':'model/lists/model/0/0'});
-	App.createContainer('pro_model_temp');
-	var bbox = bootbox.dialog({
-		title: 'Select Model',
-		message: $('#pro_model_temp'),
-		closeButton: true,
-		size:'large',
-	});
-	bbox.init(function () {
-		$.get('product_price/list_model/model/0/0', function (content) {
-			$('#pro_model_temp').empty().append(content);
-		}).done(function () {
-		}).fail(function (data) {
-			bbox.modal("hide");
-			Client.message.error({'data': data});
-		});
-	});
+    App.createContainer('pro_model_temp');
+    var bbox = bootbox.dialog({
+        title: 'Select Model',
+        message: $('#pro_model_temp'),
+        closeButton: true,
+        size:'large',
+    });
+    bbox.init(function () {
+        $.get('product_price/list_model/model/0/0', function (content) {
+            $('#pro_model_temp').empty().append(content);
+        }).done(function () {
+        }).fail(function (data) {
+            bbox.modal("hide");
+            Client.message.error({'data': data});
+        });
+    });
 }
 
 var costingModal; // Variabel global untuk menyimpan referensi modal
@@ -68,27 +67,6 @@ function costing_list_choose() {
     });
 }
 
-
-// function choose_costing(id, model_code, fob_price) {
-//     setTimeout(function() {
-//         if ($("#costingid0").length) {
-//             $('#costingid0').val(id);
-//         }
-
-//         if ($("#costingcode0").length) {
-//             $('#costingcode0').val( number_format(fob_price, 2));
-//         }
-
-//         // Tutup modal yang sebelumnya dibuka
-//         if (costingModal) {
-//             costingModal.modal("hide");
-//             costingModal = null; // Reset variabel setelah menutup modal
-//         }
-//     }, 100);
-
-//     return false;
-// }
-
 // Helper function untuk format angka
 function number_format(number, decimals) {
     // Pastikan number adalah angka yang valid
@@ -107,8 +85,6 @@ function number_format(number, decimals) {
     // Gunakan regex untuk menambahkan koma sebagai pemisah ribuan
     return formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
-
-
 
 function model_search2(offset) {
     var id = $('#id').val();
@@ -132,7 +108,6 @@ function model_search2(offset) {
     });
 }
 
-
 function model_set2(id, temp, tempid) {
     var modelid = document.getElementsByName('modelid[]');
     var st = 0;
@@ -151,19 +126,18 @@ function model_set2(id, temp, tempid) {
         $('#billto').prop("disabled", true);
         
         // Menutup modal
-        var bbox = bootbox.hideAll();
+        bootbox.hideAll();
     } else {
         App.errorForm.create({message: ' - Duplicate Model!'});
     }
 }
 
-
-
+var modelModal;
 function model_list_choose() {
     var billto = $('#billto').val();
 
     App.createContainer('model_list_temp');
-    modelModal = bootbox.dialog({ // Simpan referensi modal ke variabel global
+    modelModal = bootbox.dialog({
         title: 'Select Model',
         message: $('#model_list_temp'),
         closeButton: true,
@@ -180,10 +154,9 @@ function model_list_choose() {
     });
 }
 
-function select_quotation(fob_price,quation_id) {
+function select_quotation(fob_price, quation_id) {
     console.log('FOB Price terpilih:', fob_price);
     console.log('quotation:', quation_id);
-    console.log('Isi dari modelModal:', modelModal);
 
     // Isi nilai ke input
     $('#costingcode0').val(fob_price);
@@ -203,10 +176,7 @@ function select_quotation(fob_price,quation_id) {
     return false;
 }
 
-
-
-
-function choose_model(id, model_code, dw,dt,dht,custcode,description) {
+function choose_model(id, model_code, dw, dt, dht, custcode, description) {
     setTimeout(function() {
         if ($("#modelid0").length) {
             $('#modelid0').val(id);
@@ -219,13 +189,13 @@ function choose_model(id, model_code, dw,dt,dht,custcode,description) {
             $('#modelcode0').val(model_code);
         }
 
-		if ($("#modelcode0").length) {
+        if ($("#modelcode0").length) {
             $('#cw').val(dw);
         }
-		if ($("#modelcode0").length) {
+        if ($("#modelcode0").length) {
             $('#cd').val(dt);
         }
-		if ($("#modelcode0").length) {
+        if ($("#modelcode0").length) {
             $('#ch').val(dht);
         }
         if ($("#modelcode0").length) {
@@ -234,9 +204,6 @@ function choose_model(id, model_code, dw,dt,dht,custcode,description) {
         if ($("#modelcode0").length) {
             $('#description').val(description);
         }
-
-
-
 
         // Tutup modal yang sebelumnya dibuka
         if (modelModal) {
@@ -247,7 +214,6 @@ function choose_model(id, model_code, dw,dt,dht,custcode,description) {
 
     return false;
 }
-
 
 function get_costing(id_cust, id_model) {
     $.ajax({
@@ -263,7 +229,6 @@ function get_costing(id_cust, id_model) {
     });
 }
 
-
 function pro_savenew() {
     // Validasi field-field wajib
     var customerid = $('#customerid').val();
@@ -271,7 +236,7 @@ function pro_savenew() {
     var material = $('#material').val();
     console.log(material);
     var costingid = $('#costingcode0').val();
-    var quotation_id =$('#costingid0').val();
+    var quotation_id = $('#costingid0').val();
     var cw = $('#cw').val();
     var cd = $('#cd').val();
     var ch = $('#ch').val();
@@ -292,23 +257,18 @@ function pro_savenew() {
         $('#modelcode0').focus();
         return;
     }
-
-    // if (material = "") {
-    //     alert("Please fill the material!");
-    //     $('#material').focus();
-    //     return;
-    // }
     
     if (costingid == 0 || costingid == "") {
         alert("Please select FOB value!");
         $('#costingcode0').focus();
         return;
     }
-    if ( quotation_id == "") {
-       
+    
+    if (quotation_id == "") {
         $('#costingid0').focus();
         return;
     }
+    
     if (cw == "" || isNaN(cw)) {
         alert("Please enter valid Width dimension!");
         $('#cw').focus();
@@ -336,7 +296,7 @@ function pro_savenew() {
     // Persiapkan data untuk dikirim ke server
     var data = {
         'customerid': customerid,
-        'quotation_id' : quotation_id,
+        'quotation_id': quotation_id,
         'ebako_code': modelid,
         'quotation_date': quotation_date,
         'approval_date': $('#approval_date').val(),
@@ -345,19 +305,19 @@ function pro_savenew() {
         'ch': ch,
         'q_finished': $('#item_costing_q_wood').val(),
         'fob': costingid,
-        'material' :material,
-        'customercode' : custcode,
-        'description' :description,
+        'material': material,
+        'customercode': custcode,
+        'description': description,
     };
 
-	console.log(data);
-	$.ajax({
+    console.log(data);
+    $.ajax({
         url: url + 'product_price/savenew',
         type: 'POST',
         data: JSON.stringify(data),
         contentType: 'application/json',
         success: function(response) {
-			bbox.modal("hide");
+            bbox.modal("hide");
             console.log("Response:", response);
             productprice_search(0); 
         },
@@ -366,11 +326,7 @@ function pro_savenew() {
             console.error("Error:", xhr.responseText);
         }
     });
-    
-   
 }
-
-
 
 function productprice_search(offset) {
     if (undefined == offset) {
@@ -395,30 +351,9 @@ function productprice_search(offset) {
     });
 }
 
-
-// function product_price_edit(id){
-	
-// 	App.createContainer('productprice_update_temp');
-// 	var bbox = bootbox.dialog({
-// 		title: 'Update Product Price',
-// 		message: $('#costing_update_temp'),
-// 		closeButton: true,
-// 	});
-// 	bbox.init(function () {
-// 		$.get( 'product_price/edit/'+id , function (content) {
-// 			$('#productprice_update_temp').empty().append(content);
-// 		}).done(function () {
-// 		}).fail(function (data) {
-// 			bbox.modal("hide");
-// 			Client.message.error({'data': data});
-// 		});
-// 	});
-// }
-
-
 function product_price_edit(id){
     App.createContainer('productprice_temp');
-    bbox = bootbox.dialog({ // Initialize bbox here
+    bbox = bootbox.dialog({
         title: 'Edit Product Price',
         message: $('#productprice_temp'),
         closeButton: true,
@@ -434,9 +369,6 @@ function product_price_edit(id){
     });
 }
 
-
-    var quotation_id =$('#costingid0').val();
-
 function pro_edit() {
     // Validasi field-field wajib
     var id = $('#id').val();
@@ -449,11 +381,10 @@ function pro_edit() {
     var cd = $('#cd').val();
     var ch = $('#ch').val();
     var quotation_date = $('#quotation_date').val();
-    var quotation_id =$('#costingid0').val();
+    var quotation_id = $('#costingid0').val();
     var description = $('#description').val();
     var custcode = $('#custcode').val();
     
-
     // Validasi data yang diperlukan
     if (customerid == 0 || customerid == "") {
         alert("Please select Customer!");
@@ -497,13 +428,12 @@ function pro_edit() {
         return;
     }
 
-
     // Persiapkan data untuk dikirim ke server
     var data = {
         'id': id,
         'customerid': customerid,
-        'quotation_id' :quotation_id,
-        'material' :material,
+        'quotation_id': quotation_id,
+        'material': material,
         'ebako_code': modelid,
         'quotation_date': quotation_date,
         'approval_date': $('#approval_date').val(),
@@ -512,8 +442,8 @@ function pro_edit() {
         'ch': ch,
         'q_finished': $('#q_finishes').val(),
         'fob': costingid,
-        'customercode' : custcode,
-        'description' :description
+        'customercode': custcode,
+        'description': description
     };
 
     console.log("Data dikirim:", data);
@@ -532,14 +462,78 @@ function pro_edit() {
             console.error("Error:", xhr.responseText);
         }
     });
-    
 }
-
 
 function product_price_delete(id) {
     if(confirm('Sure?')){
-        $.get(url+'product_price/delete/'+id,function(){
+        $.get(url+'product_price/delete/'+id, function() {
             pro_view();
         });
     }
 }
+
+// Fungsi untuk membuka modal daftar sales quotation
+function open_sales_quotation_list() {
+    $('#salesQuotationModal').modal('show');
+    search_approved_quotations();
+}
+
+// Fungsi untuk mencari quotation yang sudah disetujui
+function search_approved_quotations() {
+    var customer_id = $('#search_customer').val();
+    
+    $.ajax({
+        url: url + "product_price/get_approved_quotations",
+        type: "GET",
+        data: { customer_id: customer_id },
+        success: function(response) {
+            $('#approved_quotations_list').html(response);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error fetching approved quotations:", error);
+            alert("An error occurred while loading quotation data");
+        }
+    });
+}
+
+// Fungsi untuk mengimpor quotation yang dipilih ke product price
+function import_selected_quotations() {
+    var selectedQuotations = [];
+    
+    $('input[name="quotation_detail_checkbox"]:checked').each(function() {
+        selectedQuotations.push($(this).val());
+    });
+    
+    if (selectedQuotations.length === 0) {
+        alert("Select at least one quotation to import!");
+        return;
+    }
+    
+    $.ajax({
+        url: url + "product_price/import_quotations",
+        type: "POST",
+        data: { quotation_details: selectedQuotations },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                alert("Data successfully imported into Product Price!");
+                $('#salesQuotationModal').modal('hide');
+                productprice_search(0); // Refresh data product price
+            } else {
+                alert("Failed to import data: " + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error importing quotations:", error);
+            alert("An error occurred while importing data");
+        }
+    });
+}
+
+// Toggle semua checkbox
+function toggle_all_quotations(checkbox) {
+    $('input[name="quotation_detail_checkbox"]').prop('checked', checkbox.checked);
+}
+
+
+

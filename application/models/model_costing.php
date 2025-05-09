@@ -1258,32 +1258,80 @@ class model_costing extends CI_Model {
     }
 
     function select_item_by_quotationid($parentid, $costingid) {
-        $query = "select * from sales_quotes_detail where costingid=$costingid and sales_quotes_id=$parentid";
-        // echo $query."<br>";
-        return $this->db->query($query)->result();
+        // Gunakan prepared statement untuk mencegah SQL injection
+        $query = "SELECT * FROM sales_quotes_detail WHERE costingid = ? AND sales_quotes_id = ?";
+        $result = $this->db->query($query, array($costingid, $parentid));
+        
+        // Cek apakah query berhasil dieksekusi
+        if ($result !== FALSE) {
+            return $result->result();
+        } else {
+            // Log error jika terjadi masalah
+            error_log("Error in select_item_by_quotationid: " . $this->db->error()['message']);
+            // Return array kosong sebagai fallback
+            return array();
+        }
     }
 
     public function create_price_list($data)
     {
         $this->db->where('model_id', $data['model_id']);
         $this->db->where('customer_id', $data['customer_id']);
-        $query = $this->db->get('price_list');
+        $this->db->where('price_list_id', $data['price_list_id']);
+        $query = $this->db->get('price_list_detail');
+    
+        error_log('Query cek data: ' . $this->db->last_query());
     
         if ($query->num_rows() > 0) {
             $existing = $query->row();
-    
+            error_log('Data existing ditemukan dengan price_list_id: ' . $data['price_list_id'] . ' status: ' . $existing->status);
+            
             // Cek jika status-nya Final, maka tolak update
             if (strtolower($existing->status) === 'final') {
+                error_log('Update ditolak karena status Final');
                 return false; // Tidak bisa update jika sudah Final
             }
-    
+            
             // Jika tidak Final, lakukan update
             $this->db->where('model_id', $data['model_id']);
             $this->db->where('customer_id', $data['customer_id']);
-            return $this->db->update('price_list', $data);
+            $this->db->where('price_list_id', $data['price_list_id']);
+            $result = $this->db->update('price_list_detail', $data);
+            error_log('Query update: ' . $this->db->last_query());
+            error_log('Hasil update: ' . ($result ? 'berhasil' : 'gagal'));
+            
+            // Tangani error tanpa menggunakan metode error()
+            if (!$result) {
+                error_log('Update gagal. Last query: ' . $this->db->last_query());
+            }
+            
+            return $result;
         } else {
             // Jika tidak ditemukan, insert data baru
-            return $this->db->insert('price_list', $data);
+            error_log('Mencoba insert data baru dengan price_list_id: ' . $data['price_list_id']);
+            error_log('Data yang akan diinsert: ' . json_encode($data));
+            
+            try {
+                $result = $this->db->insert('price_list_detail', $data);
+                error_log('Query insert: ' . $this->db->last_query());
+                error_log('Hasil insert: ' . ($result ? 'berhasil' : 'gagal'));
+                
+                // Tangani error tanpa menggunakan metode error()
+                if (!$result) {
+                    error_log('Insert gagal. Last query: ' . $this->db->last_query());
+                    
+                    // Coba dapatkan last error dari database dengan metode alternatif
+                    $last_error = pg_last_error();
+                    if ($last_error) {
+                        error_log('PostgreSQL error: ' . $last_error);
+                    }
+                }
+                
+                return $result;
+            } catch (Exception $e) {
+                error_log('Exception pada insert: ' . $e->getMessage());
+                return false;
+            }
         }
     }
     
@@ -1302,11 +1350,18 @@ class model_costing extends CI_Model {
     }
     
 
-    public function check_price_list_exists($model_id, $customer_id) {
+    public function check_price_list_exists($model_id, $customer_id, $price_list_id = null) {
         $this->db->where('model_id', $model_id);
         $this->db->where('customer_id', $customer_id);
-        $query = $this->db->get('price_list');
-    
+        
+        if ($price_list_id !== null) {
+            $this->db->where('price_list_id', $price_list_id);
+        }
+        
+        $query = $this->db->get('price_list_detail');
+        error_log('Query check_price_list_exists: ' . $this->db->last_query());
+        error_log('Hasil check_price_list_exists: ' . $query->num_rows());
+        
         return $query->num_rows() > 0;
     }
     

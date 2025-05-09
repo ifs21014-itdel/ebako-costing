@@ -30,6 +30,50 @@ function pricelist_search(offset) {
     });
 }
 
+// function pricelist_search_detail(offset) {
+//     var model_name = $('#model_name_s').val();
+//     var customer_name = $('#customer_name_s').val();
+//     var customerid = $('#customerid_search').val();
+    
+//     $.ajax({
+//         url: base_url + "index.php/price_list/search_detail",
+//         type: "POST",
+//         data: {
+//             model_name: model_name,
+//             customer_name: customer_name,
+//             customerid: customerid,
+//             offset: offset
+//         },
+//         success: function(data) {
+//             $('#pricelistdata').html(data);
+//         },
+//         error: function(xhr, status, error) {
+//             console.error("Error pada pencarian: " + error);
+//             alert("Terjadi kesalahan saat mencari data. Silakan coba lagi.");
+//         }
+//     });
+// }
+
+function pricelist_search_detail(proforma_quotation_id, offset) {
+    var model_name = $('#model_name_s').val();
+    var customer_name = $('#customer_name_s').val();
+     var customerid = $('#customerid_search').val();
+    
+    $.ajax({
+        url: base_url + "index.php/price_list/search_detail",
+        type: "POST",
+        data: {
+            model_name: model_name,
+           customer_name: customer_name,
+             customerid: customerid,
+        offset: offset
+        },
+        success: function(data) {
+            $('#detail_section').html(data);
+        }
+    });
+}
+
 /**
  * View price list detail
  * @param {int} id - Price list ID
@@ -217,3 +261,52 @@ $(document).ready(function() {
         $('#column_selection').collapse('toggle');
     });
 });
+
+/**
+ * JavaScript functions untuk integrasi Price List
+ * Tambahkan ini pada file price_list.js yang sudah ada
+ */
+
+// Fungsi untuk melihat detail price list
+// Fungsi untuk menampilkan detail price list
+function price_list_view_detail(id) {
+    $.ajax({
+        url: base_url + "index.php/price_list/view_detail/" + id,
+        type: "GET",
+        success: function(data) {
+            // Tampilkan detail di section
+            $('#price_list_detail_content').html(data);
+            $('#detail_section').show();
+            
+            // Scroll ke detail section
+            $('html, body').animate({
+                scrollTop: $("#detail_section").offset().top - 20
+            }, 500);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error loading detail: " + error);
+            alert("Gagal memuat detail. Silakan coba lagi.");
+        }
+    });
+}
+
+$(document).ready(function () {
+    var table = $('#table_price_list').DataTable({
+        scrollY: "300px",
+        scrollX: true,
+        scrollCollapse: true,
+        paging: false,
+        ordering: false,
+        info: false,
+        searching: false,
+        autoWidth: true,
+        select: true,
+    });
+    
+    // Ketika baris di klik, tampilkan detail
+    $('#table_price_list tbody').on('click', 'tr.clickable-row', function () {
+        var id = $(this).data('id');
+        price_list_view_detail(id);
+    });
+});
+

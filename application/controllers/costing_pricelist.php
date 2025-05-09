@@ -135,7 +135,7 @@ class costing_pricelist extends CI_Controller {
         $end_ratevalue = (double) $this->input->get('end_ratevalue');
         $range_ratevalue = (double) $this->input->get('range_ratevalue');
         $profit_percentage = (double) $this->input->get('profit_percentage');
-
+        $prev_date = $this->input->get('prev_quo_date');
         $start_profit = (double) $this->input->get('start_profit');
         $end_profit = (double) $this->input->get('end_profit');
         $range_profit = (double) $this->input->get('range_profit');
@@ -165,7 +165,8 @@ class costing_pricelist extends CI_Controller {
         $dateto = $this->input->get('dateto');
 
         $data['price_list_base_on'] = $price_list_base_on;
-
+        // Di controller, tambahkan ini saat mengambil data
+        $data['prev_quo_date'] = $prev_date;
         $data['start_ratevalue'] = $start_ratevalue;
         $data['end_ratevalue'] = $end_ratevalue;
         $data['range_ratevalue'] = $range_ratevalue;
@@ -449,6 +450,7 @@ class costing_pricelist extends CI_Controller {
 
     function print_quotation() {
         $quotation_id = $this->input->get('id');
+        error_log($quotation_id);
         $data['quotation'] = $this->model_costing->select_quotation_byid($quotation_id);
         $data['quo_item'] = $this->model_costing->select_allitem_by_quotationid($quotation_id);
 
@@ -457,6 +459,8 @@ class costing_pricelist extends CI_Controller {
     }
 
     public function create_price_list() {
+        $clean_price_rate = str_replace(',', '', $this->input->post('price_rate'));
+    
         $data = array(
             'model_id'             => $this->input->post('model_id'),
             'customer_id'          => $this->input->post('customer_id'),
@@ -464,7 +468,7 @@ class costing_pricelist extends CI_Controller {
             'last_costing_price'   => $this->input->post('last_costing_price'),
             'target_price'         => $this->input->post('target_price'),
             'rate'                 => $this->input->post('rate'),
-            'price_rate'           => $this->input->post('price_rate'),
+            'price_rate'           => $clean_price_rate,
             'profit_percentage'    => $this->input->post('profit_percentage'),
             'fixed_cost'           => $this->input->post('fixed_cost'),
             'variable_cost'        => $this->input->post('variable_cost'),
@@ -473,34 +477,48 @@ class costing_pricelist extends CI_Controller {
             'picklist_rate'        => $this->input->post('picklist_rate'),
             'insurance'            => $this->input->post('insurance'),
             'costing_id'           => $this->input->post('costing_id'),
-            'price_list_date'      => $this->input->post('price_list_date'),
+            'price_list_id'        => $this->input->post('price_list_id'),
             'type'                 => $this->input->post('type'),
+            'status'               => "Draft"
         );
-    
+        
+        error_log('Data price_list yang akan disimpan: ' . json_encode($data));
+        
+        // Validasi data sebelum memanggil model
+        foreach (['model_id', 'customer_id', 'costing_id', 'price_list_id', 'quantity'] as $required) {
+            if (empty($data[$required])) {
+                error_log('ERROR: Field ' . $required . ' kosong atau tidak valid');
+                echo json_encode(['success' => false, 'msg' => 'Field ' . $required . ' tidak boleh kosong']);
+                return;
+            }
+        }
+        
         $costing_id = $data['costing_id'];
         $fob_price = $this->model_costing->get_fob_price_by_costingid($costing_id);
-    
+        
         $data['last_quotation_price'] = $fob_price;
         $data['created_by'] = $this->session->userdata('id');
-        $data['status'] = "Draft";
-    
+        
         // Cek apakah data sudah ada di database
         $exists = $this->model_costing->check_price_list_exists($data['model_id'], $data['customer_id']);
-    
+        
         // Hanya set updated_by jika melakukan update
         if ($exists) {
             $data['updated_by'] = $this->session->userdata('id');
         }
-    
+        
         $insert = $this->model_costing->create_price_list($data);
-    
+        
         if ($insert) {
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['success' => false, 'msg' => 'Gagal menyimpan data']);
+            // Tidak menggunakan $this->db->error() karena tidak tersedia
+            echo json_encode([
+                'success' => false, 
+                'msg' => 'Gagal menyimpan data. Silakan periksa log untuk detail error.'
+            ]);
         }
     }
-    
     
     
     

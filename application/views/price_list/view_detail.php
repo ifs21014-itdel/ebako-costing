@@ -1,6 +1,6 @@
-<?php
+<!-- <?php
 /**
- * View file for Price List
+ * View_detail file for Price List
  */
 ?>
 
@@ -33,7 +33,19 @@
                             </select>
                             <button class="btn btn-default" onclick="pricelist_search(0)">Search</button>
                         </div>
-                       
+                        <div class="col-sm-4 text-right">
+                            <button class="btn btn-primary" id="toggle_column_btn">
+                                <i class="fa fa-columns"></i> Select Column
+                            </button>
+                            <button class="btn btn-info btn-print-selected" onclick="printSelectedRows()">
+                                <i class="fa fa-print"></i> Print Selected
+                            </button>
+                            <?php if (in_array('create', $accessmenu)) { ?>
+                                <button class="btn btn-primary" onclick="window.location.href='<?php echo base_url(); ?>index.php/price_list/create'">
+                                    <i class="fa fa-plus"></i> Add New
+                                </button>
+                            <?php } ?>
+                        </div>    
                     </div>
                 </td>
             </tr>
@@ -44,7 +56,7 @@
                 // Pastikan $offset didefinisikan
                 $offset = isset($offset) ? $offset : 0;
                 $data = array('offset' => $offset);
-                $this->load->view('price_list/search', $data);
+                $this->load->view('price_list/search_detail', $data);
                 ?>
                 </div>
                 </td>
@@ -52,8 +64,6 @@
         </table>
     </div>
 </div>
-
-
 
 <script>
 // Tambahkan base_url untuk digunakan dalam Javascript
@@ -65,4 +75,4 @@ $(document).ready(function() {
         $("#column_selection").collapse('toggle');
     });
 });
-</script>
+</script> -->

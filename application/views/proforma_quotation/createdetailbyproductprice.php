@@ -32,6 +32,18 @@
             </td>
         </tr>
         <tr>
+            <td align="right">
+                <label class="labelelement">
+                    <span style="color: red;">*&nbsp;</span>Quantity :
+                </label>
+            </td>  
+            <td>
+                <input type="number" id="quantity" name="quantity" 
+                    style="width: 305px;background-color: #fbfbfb;border: 1px solid #aeb5c5;" class="form-control-sm" required />
+            </td>
+        </tr>
+
+        <tr>
             <td colspan="2" align="center"><br/>
                 <button type="button" class="btn btn-md btn-success" onclick="proforma_detail_savenew_from_product_price()">Save</button>
                 <button type="button" class="btn btn-md btn-secondary" data-dismiss="modal">Cancel</button>

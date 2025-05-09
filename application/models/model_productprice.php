@@ -154,8 +154,7 @@ class model_productprice extends CI_Model {
         return null;
     }
 
-    // Di model_productprice.php
-    public function getAllProductPrices()
+    public function getProductPricesByCustomer($customer_id)
     {
         $query = "
             SELECT 
@@ -176,18 +175,19 @@ class model_productprice extends CI_Model {
                 c.name AS customer_name
             FROM product_price pp
             LEFT JOIN customer c ON pp.customer_id = c.id
+            WHERE pp.customer_id = ?
             ORDER BY pp.quotation_date DESC
         ";
-        
-        $result = $this->db->query($query);
-        
+    
+        $result = $this->db->query($query, [$customer_id]);
+    
         if ($result && $result->num_rows() > 0) {
             return $result->result();
         }
-        
+    
         return [];
     }
-
+    
     public function getAllProductPrices_2()
     {
         $query = "
@@ -312,6 +312,89 @@ public function searchProductPrices($model_code = null, $price_from = null, $pri
     
     return [];
 }
+
+/**
+ * Mendapatkan daftar sales quotation yang telah disetujui
+ * @param int $customer_id ID customer (opsional)
+ * @return array Daftar quotation yang disetujui
+ */
+public function get_approved_quotations($customer_id = 0) {
+    $this->db->select('sqd.id, sq.quotation_number, c.name as customer_name, m.no as model_code, 
+                      m.description, m.custcode, sqd.fob_price, sq.quo_date, sqd.cw, sqd.cd, sqd.ch, 
+                      m.id as model_id, sq.customer_id, sq.id as sales_quotes_id, sqd.q_finishes');
+    $this->db->from('sales_quotes_detail sqd');
+    $this->db->join('sales_quotes sq', 'sq.id = sqd.sales_quotes_id', 'left');
+    $this->db->join('costing co', 'sqd.costingid = co.id', 'left');
+    $this->db->join('model m', 'co.modelid = m.id', 'left');
+    $this->db->join('customer c', 'sq.customer_id = c.id', 'left');
+    
+    // Subquery untuk mencocokkan id dari sales_quotes_detail yang sudah ada di product_price
+    $this->db->where('NOT EXISTS (SELECT 1 FROM product_price pp WHERE pp.quotation_id = sqd.id)', NULL, FALSE);
+    
+    $this->db->where('sq.status', 'Approved');
+    if ($customer_id && $customer_id != 0) {
+        $this->db->where('sq.customer_id', $customer_id);
+    }
+    $this->db->order_by('sq.quo_date', 'DESC');
+    $query = $this->db->get();
+    if ($query === FALSE) {
+        log_message('error', 'Database error: ' . $this->db->error()['message']);
+        return array();
+    }
+    return $query->result();
+}
+
+
+
+/**
+ * Mengimpor sales quotation detail yang dipilih ke dalam tabel product_price
+ * @param array $quotation_detail_ids Array berisi ID dari sales_quotes_detail
+ * @return bool True jika berhasil, False jika gagal
+ */
+public function import_quotations_to_product_price($quotation_detail_ids) {
+    if (empty($quotation_detail_ids)) {
+        return false;
+    }
+    
+    $this->db->trans_start();
+    
+    foreach ($quotation_detail_ids as $id) {
+        // Ambil detail quotation yang akan diimpor
+        $this->db->select('sqd.*, sq.quotation_number, sq.customer_id, sq.quo_date,sq.approved_date,
+                           m.no as model_no, m.custcode, m.description');
+        $this->db->from('sales_quotes_detail sqd');
+        $this->db->join('sales_quotes sq', 'sq.id = sqd.sales_quotes_id', 'left');
+        $this->db->join('model m', 'sqd.costingid = m.id', 'left');
+        $this->db->where('sqd.id', $id);
+        $query = $this->db->get();
+        $quotation = $query->row();
+        
+        if ($quotation) {
+            $data = [
+                'ebako_code'    => $quotation->model_no,
+                'customer_id'   => $quotation->customer_id,
+                'quotation_id' => $quotation->id,
+                'material'      => $quotation->q_wood,
+                'quotation_date'=> $quotation->quo_date,
+                'approval_date' =>  $quotation->approved_date,
+                'cw'            => $quotation->cw,
+                'cd'            => $quotation->cd,
+                'ch'            => $quotation->ch,
+                'q_finished'    => $quotation->q_finishes,
+                'fob'           => $quotation->fob_price,
+                'customercode'  => $quotation->custcode, // ✅ Menggunakan custcode yang benar
+                'description'   => $quotation->description
+            ];
+            
+            $this->db->insert('product_price', $data);
+        }
+    }
+    
+    $this->db->trans_complete();
+    
+    return $this->db->trans_status();
+}
+
 
 
 

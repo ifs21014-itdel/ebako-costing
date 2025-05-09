@@ -7,6 +7,8 @@
         <script type="text/javascript">var url = '<?php echo base_url() ?>';</script>
 
         <script src="<?php echo base_url() ?>assets/vendors/jquery/js/jquery-1.9.1.min.js"></script>
+        <script src="<?php echo base_url() ?>assets/vendors/nifty/js/bootstrap.min.js"></script>
+
         <script src="<?php echo base_url() ?>assets/js/Client.js"></script>
         <script src="<?php echo base_url() ?>js/costing_pricelist.js"></script>
         <style type="text/css">
@@ -78,6 +80,55 @@
             P.breakhere {page-break-before: always};
         </STYLE>
 
+        <style type="text/css">
+            #price_list_modal .modal-dialog {
+                width: 500px;
+                max-width: 80%;
+                margin: 30px auto;
+            }
+            
+            #price_list_modal .modal-content {
+                border-radius: 6px;
+                box-shadow: 0 5px 15px rgba(0,0,0,.5);
+            }
+            
+            #price_list_modal .modal-header {
+                padding: 10px 15px;
+                border-bottom: 1px solid #e5e5e5;
+            }
+            
+            #price_list_modal .modal-body {
+                padding: 15px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            
+            #price_list_modal .modal-footer {
+                padding: 10px 15px;
+                text-align: right;
+                border-top: 1px solid #e5e5e5;
+            }
+            
+            #price_list_modal .form-control {
+                display: block;
+                width: 100%;
+                height: 34px;
+                padding: 6px 12px;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+            
+            #price_list_modal .form-group {
+                margin-bottom: 15px;
+            }
+            
+            #price_list_modal label {
+                display: block;
+                margin-bottom: 5px;
+            }
+        </style>
+
     </head>
     <body style="margin-top: 20px">
     <center>
@@ -91,7 +142,17 @@
                         <div id="top_bar_notification" style="display: none;"></div>
                         <div style="width: 90%;text-align: left;">
                             <h2 onclick="show_hide_header()" style="cursor: pointer;">PRICE LIST</h2>
-                        </div>
+                            <?php if ($type !== 'quotation' && $type !== 'quotation_p'): ?>
+                                <div style="margin-bottom: 10px; text-align: right; width: 90%;">
+                                    <button id="open_price_list_modal" class="btn btn-md btn-primary">Create Price List</button>
+                                    <select id="existing_price_list" class="form-control" style="display: inline-block; width: auto;">
+                                        <option value="">-- Pilih Price List --</option>
+                                    </select>
+                                </div>
+                            <?php endif; ?>
+
+
+                              </div>
                         <div id="header_pice_list" style="width: 90%;text-align: center;padding-bottom: 1px;">
                             <table style="float: left;padding-right: 10px;" >
                                 <?php if (@$price_list_base_on == "rate") { ?>
@@ -168,6 +229,25 @@
                                     <td>Picklist Rate</td>
                                     <td> : </td>
                                     <td> <b><?php echo @$picklist_ratevalue; ?></b></td>
+                                </tr>
+                                <tr>
+                                    <td>Original Date</td>
+                                    <td> : </td>
+                                    <td> <b>
+                                    <?php 
+                                        $parentid = isset($_GET['parentid']) ? (int)$_GET['parentid'] : 0;
+
+                                        $result = null;
+                                        if ($parentid > 0) {
+                                            $query = $this->db->query("SELECT prev_quo_date FROM sales_quotes WHERE id = $parentid");
+                                            if ($query && $query->num_rows() > 0) {
+                                                $result = $query->row();
+                                            }
+                                        }
+                                        
+                                        echo isset($result->prev_quo_date) ? date('d-m-Y', strtotime($result->prev_quo_date)) : '-';
+                                    ?>
+                                    </b></td>
                                 </tr>
                             </table>
                         </div>
@@ -271,16 +351,16 @@
                                 <?php } ?>
                                 <th rowspan="2" style="border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Target Price</th>
                                 <?php
-if ($type == 'quotation_p' || $type == 'pricelist_p') {
-    ?>
-    <th rowspan="2" style="border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Quantity</th>
-    <?php
-} else {
-    ?>
-    <th rowspan="2" style="display: none; border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Quantity</th>
-    <?php
-}
-?>
+                                    if ($type == 'quotation_p' || $type == 'pricelist_p') {
+                                        ?>
+                                        <th rowspan="2" style="border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Quantity</th>
+                                        <?php
+                                    } else {
+                                        ?>
+                                        <th rowspan="2" style="display: none; border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Quantity</th>
+                                        <?php
+                                    }
+                                    ?>
                                 <th rowspan="2" style="border:1px solid #000;padding: 5px;max-width: 100px;width: 100px;word-wrap:break-word;">Date</th>
 
                                 <th colspan="<?php echo $ranges_length ?>" width="" style="border:1px solid black;height: 25px;text-align: center;">
@@ -408,28 +488,46 @@ if ($type == 'quotation_p' || $type == 'pricelist_p') {
                                     }
                                     ?>
 
-                                    <td style="border:1px solid #000;padding: 5px;max-width: 80px;width: 50px;word-wrap:break-word;text-align: center" class="td_<?php echo $result->id; ?>" 
-                                        id="td_<?php echo $result->id; ?>_rate_<?php echo '@$ratevalue_tmp'; ?>_profit_<?php echo @$profit_percentage_tmp; ?>">
-                                        <a href="javascript:void(0)" style="text-decoration: none;"
-                                           onclick="print_preview_cost_sheet(<?php echo "'" . $result->id . "', '" . @$ratevalue_tmp . "', '" . @$profit_percentage_tmp . "', '" . @$fixed_cost . "', '" . @$variable_cost . "', '" . @$port_origin_cost . "', '" . @$picklist_mark_up . "', '" . @$picklist_ratevalue . "'" ?>)">
-                                               <?php
-                                               $stat2 = "";
-                                               if (count($sales_quotes_item) > 0) {
-                                                   //  echo $result2->fob_price."=".$costing_details[$result->id][$range]."<br>";
-                                                   if ($result2->fob_price == $costing_details[$result->id][$range] && $stat=='checked') {
-                                                       $stat2 = 'checked';
-                                                   }
-                                               }
-                                               echo number_format($costing_details[$result->id][$range], 2)
-                                               ?> 
-                                        </a> 
-                                        <br/>
-                                        <br/>
-                                        <input type="radio" name="selected_price_<?php echo $result->id; ?>" value="<?php echo $no; ?>" style="width: 16px;height: 16px;" 
-                                        onclick="set_as_fixed_cost_sheet(<?php echo "'" . $result->id . "', '" . @$ratevalue_tmp . "', '" . @$profit_percentage_tmp . "', '" . @$fixed_cost . "', '" . @$variable_cost . "', '" . @$port_origin_cost . "', '" . @$picklist_mark_up . "', '" . @$picklist_ratevalue . "', '" . $costing_details[$result->id][$range] . "', document.getElementById('target_price_" . $result->id . "').value, document.getElementById('quantity_" . $result->id . "').value, '" . $range . "', '" . number_format($costing_details[$result->id][$range], 2) . "', '" . $result->modelid . "', '" . $result->fob_price . "','" . $result->customerid . "', '" . $insurance . "', document.getElementById('date_" . $result->id . "').value,document.getElementById('type_" . $result->id . "').value" ?>)"
+                                <td style="border:1px solid #000;padding: 5px;max-width: 80px;width: 50px;word-wrap:break-word;text-align: center"
+                                    class="td_<?php echo $result->id; ?>"
+                                    id="td_<?php echo $result->id; ?>_rate_<?php echo @$ratevalue_tmp; ?>_profit_<?php echo @$profit_percentage_tmp; ?>">
+
+                                    <a href="javascript:void(0)" style="text-decoration: none;"
+                                    onclick="print_preview_cost_sheet(
+                                        <?php echo "'" . $result->id . "', '" . @$ratevalue_tmp . "', '" . @$profit_percentage_tmp . "', '" . @$fixed_cost . "', '" . @$variable_cost . "', '" . @$port_origin_cost . "', '" . @$picklist_mark_up . "', '" . @$picklist_ratevalue . "'"; ?>)">
+                                        <?php
+                                        $stat2 = "";
+
+                                        // Hindari error undefined variable
+                                        if (!isset($stat)) {
+                                            $stat = '';
+                                        }
+
+                                        // Gunakan $result, bukan $result2
+                                        if (count($sales_quotes_item) > 0) {
+                                            if (
+                                                isset($result->fob_price) &&
+                                                isset($costing_details[$result->id][$range]) &&
+                                                $result->fob_price == $costing_details[$result->id][$range] &&
+                                                $stat == 'checked'
+                                            ) {
+                                                $stat2 = 'checked';
+                                            }
+                                        }
+
+                                        echo number_format($costing_details[$result->id][$range], 2);
+                                        ?>
+                                    </a>
+                                    <br/><br/>
+                                    <input type="radio"
+                                        name="selected_price_<?php echo $result->id; ?>"
+                                        value="<?php echo $no; ?>"
+                                        style="width: 16px;height: 16px;"
+                                        onclick="set_as_fixed_cost_sheet(
+                                            <?php echo "'" . $result->id . "', '" . @$ratevalue_tmp . "', '" . @$profit_percentage_tmp . "', '" . @$fixed_cost . "', '" . @$variable_cost . "', '" . @$port_origin_cost . "', '" . @$picklist_mark_up . "', '" . @$picklist_ratevalue . "', '" . $costing_details[$result->id][$range] . "', document.getElementById('target_price_" . $result->id . "').value, document.getElementById('quantity_" . $result->id . "').value, '" . $range . "', '" . number_format($costing_details[$result->id][$range], 2) . "', '" . $result->modelid . "', '" . $result->fob_price . "','" . $result->customerid . "', '" . $insurance . "', document.getElementById('date_" . $result->id . "').value,document.getElementById('type_" . $result->id . "').value"; ?>)"
                                         title="Select Price As Fixed Cost Sheet" <?php echo $stat2; ?> >
-                                        </div>
-                                    </td>
+                                </td>
+
 
                                 <?php }
                                 ?>
@@ -446,6 +544,41 @@ if ($type == 'quotation_p' || $type == 'pricelist_p') {
                 </td>
             </tr>
         </table>
+
+        <!-- Modal untuk membuat price list -->
+        <div class="modal" id="price_list_modal" tabindex="-1" role="dialog" aria-labelledby="priceListModalLabel" aria-hidden="true" style="overflow-y: auto;">
+            <div class="modal-dialog" role="document" style="width: 500px; max-width: 80%; margin: 30px auto;">
+                <div class="modal-content" style="border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,.5);">
+                    <div class="modal-header" style="padding: 10px 15px; border-bottom: 1px solid #e5e5e5;">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-top: -2px;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="priceListModalLabel" style="margin: 0; font-size: 18px;">Create Price List</h4>
+                    </div>
+                    <div class="modal-body" style="padding: 15px; max-height: 400px; overflow-y: auto;">
+                        <form id="price_list_form">
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="price_list_date" style="display: block; margin-bottom: 5px;">Tanggal Price List</label>
+                                <input type="date" class="form-control" id="price_list_date" name="price_list_date" value="<?php echo date('Y-m-d'); ?>" required style="display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label for="customer_id" style="display: block; margin-bottom: 5px;">Customer</label>
+                                <select class="form-control" id="customer_id" name="customer_id" required style="display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="">-- Pilih Customer --</option>
+                                    <?php if(isset($datacust) && !empty($datacust)): ?>
+                                        <option value="<?php echo $datacust[0]->id; ?>" selected><?php echo $datacust[0]->name; ?></option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer" style="padding: 10px 15px; text-align: right; border-top: 1px solid #e5e5e5;">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" style="padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; margin-right: 5px;">Tutup</button>
+                        <button type="button" class="btn btn-primary" id="save_price_list" style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px;">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </body>
     <script type="text/javascript">
 
@@ -553,4 +686,146 @@ if ($type == 'quotation_p' || $type == 'pricelist_p') {
         }
 
     </script>
+
+
+<!-- Pastikan memuat Bootstrap JS jika belum ada -->
+<script src="<?php echo base_url() ?>assets/vendors/nifty/js/bootstrap.min.js"></script>
+
+
+<!-- Script untuk menangani modal -->
+<script type="text/javascript">
+    $(document).ready(function() {
+        // Variabel untuk menyimpan customer ID dari halaman
+        var currentCustomerId = "<?php echo isset($datacust[0]->id) ? $datacust[0]->id : ''; ?>";
+        
+        // Fungsi untuk memuat daftar price list berdasarkan customer
+        function loadPriceLists(customerId) {
+            $.ajax({
+                url: "<?php echo base_url() ?>price_list/get_by_customer/" + customerId,
+                type: "GET",
+                dataType: "json",
+                success: function(response) {
+                    if(response.success) {
+                        // Kosongkan select box kecuali opsi default
+                        $("#existing_price_list").find('option:not(:first)').remove();
+                        
+                        // Tambahkan opsi baru
+                        $.each(response.data, function(index, item) {
+                            var date = new Date(item.price_list_date);
+                            var formattedDate = date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear();
+                            $("#existing_price_list").append(
+                                $("<option></option>")
+                                    .attr("value", item.id)
+                                    .text("Price List " + formattedDate)
+                            );
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log("Error loading price lists:", error);
+                }
+            });
+        }
+        
+        // Muat daftar price list saat halaman dimuat
+        if(currentCustomerId) {
+            loadPriceLists(currentCustomerId);
+        }
+        
+        // Fungsi untuk menampilkan modal
+        function showModal() {
+            // Coba gunakan Bootstrap modal jika tersedia
+            if (typeof $("#price_list_modal").modal === 'function') {
+                $("#price_list_modal").modal('show');
+            } else {
+                // Alternatif: gunakan metode dialog sederhana
+                $("#price_list_modal").show();
+                
+                // Tambahkan overlay
+                $('body').append('<div id="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;"></div>');
+                
+                // Posisikan modal di tengah
+                $("#price_list_modal").css({
+                    'position': 'fixed',
+                    'top': '50%',
+                    'left': '50%',
+                    'transform': 'translate(-50%, -50%)',
+                    'z-index': '1001'
+                });
+            }
+        }
+        
+        // Fungsi untuk menutup modal
+        function closeModal() {
+            if (typeof $("#price_list_modal").modal === 'function') {
+                $("#price_list_modal").modal('hide');
+            } else {
+                $("#price_list_modal").hide();
+                $("#modal-overlay").remove();
+            }
+        }
+        
+        // Handler untuk tombol buka modal
+        $("#open_price_list_modal").click(function() {
+            showModal();
+        });
+        
+        // Handler untuk tombol tutup modal
+        $(".close, .btn-secondary").click(function() {
+            closeModal();
+        });
+        
+        // Handler untuk tombol simpan price list (SATU TEMPAT SAJA)
+        $("#save_price_list").click(function() {
+            var price_list_date = $("#price_list_date").val();
+            var customer_id = $("#customer_id").val();
+            
+            if(!price_list_date) {
+                alert("Tanggal price list harus diisi!");
+                return false;
+            }
+            
+            if(!customer_id) {
+                alert("Customer harus dipilih!");
+                return false;
+            }
+            
+            // Tampilkan indikator loading
+            $("#save_price_list").prop("disabled", true).text("Menyimpan...");
+            
+            // Kirim data ke server untuk membuat price list
+            $.ajax({
+                url: "<?php echo base_url() ?>price_list/create",
+                type: "POST",
+                dataType: "json",
+                data: {
+                    customer_id: customer_id,
+                    price_list_date: price_list_date
+                },
+                success: function(response) {
+                    if(response.success) {
+                        alert("Price list berhasil dibuat!");
+                        
+                        // Tutup modal
+                        closeModal();
+                        
+                        // Muat ulang daftar price list
+                        loadPriceLists(customer_id);
+                    } else {
+                        alert("Gagal membuat price list: " + (response.message || "Terjadi kesalahan"));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error response:", xhr.responseText);
+                    alert("Terjadi kesalahan saat menghubungi server. Silakan coba lagi.");
+                },
+                complete: function() {
+                    // Kembalikan tombol ke keadaan normal
+                    $("#save_price_list").prop("disabled", false).text("Simpan");
+                }
+            });
+        });
+    });
+</script>
+
 </html>

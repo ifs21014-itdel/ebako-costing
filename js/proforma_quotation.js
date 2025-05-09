@@ -431,13 +431,11 @@ quotation_detail_fob
 
 
 function product_price_list_choose() {
-    // Gunakan container yang berbeda untuk modal product price
     var priceContainerId = 'product_price_list_temp';
-    
-    // Buat container baru khusus untuk modal product price
+    var customer_id = $('#customerid').val();
+
     App.createContainer(priceContainerId);
-    
-    // Buat modal baru dengan container tersebut
+
     var priceModal = bootbox.dialog({
         title: 'Select Product Price',
         message: $('#' + priceContainerId),
@@ -446,7 +444,8 @@ function product_price_list_choose() {
     });
 
     priceModal.init(function () {
-        $.get('proforma_quotation/lists_product_price/' + priceContainerId, function (content) {
+        // Tambahkan customer_id di URL sebagai query parameter
+        $.get('proforma_quotation/lists_product_price/' + priceContainerId + '?customer_id=' + customer_id, function (content) {
             $('#' + priceContainerId).empty().append(content);
         }).fail(function (data) {
             priceModal.modal("hide");
@@ -454,6 +453,7 @@ function product_price_list_choose() {
         });
     });
 }
+
 
 function product_price_list_choose_2() {
     // Gunakan container yang berbeda untuk modal product price
@@ -569,6 +569,7 @@ function proforma_detail_savenew() {
     var fob_product_price = $('#productpricecode0').val() || 0;
     var fob_costing = $('#fob_costing').val() || 0;
     var remark = $('#remark').val() || '';
+    var quantity = $('#quantity').val() || '';
     var type = "Not From Product Price";
 
     // Console log semua nilai
@@ -595,6 +596,7 @@ function proforma_detail_savenew() {
         fob_product_price: parseFloat(fob_product_price),
         fob_costing: parseFloat(fob_costing),
         remark: remark,
+        quantity: quantity,
         type : type,
     };
 
@@ -630,6 +632,7 @@ function proforma_detail_savenew_from_product_price() {
     var fob_product_price = $('#productpricecode0').val() || 0;
     var fob_costing = 0;
     var remark = $('#remark').val() || '';
+    var quantity = $('#quantity').val() || '';
     var type = "From Product Price";
 
     // Console log semua nilai
@@ -656,6 +659,7 @@ function proforma_detail_savenew_from_product_price() {
         fob_product_price: parseFloat(fob_product_price),
         fob_costing: parseFloat(fob_costing),
         remark: remark,
+        quantity : quantity,
         type : type,
     };
 
@@ -773,6 +777,7 @@ function update_proforma_detail() {
     var fob_quotation = $('#quotation_detail_fob').val();
     var fob_product_price = $('#productpricecode0').val();
     var fob_costing = $('#fob_costing').val();
+    var quantity = $('#quantity').val();
     var remark = $('#remark').val();
     var type = "Not From Product Price";
 
@@ -788,6 +793,7 @@ function update_proforma_detail() {
         fob_quotation: fob_quotation,
         fob_product_price: fob_product_price,
         fob_costing: fob_costing,
+        quantity: quantity,
         remark: remark,
         type : type
     };
@@ -826,6 +832,7 @@ function update_proforma_detail_from_product_price() {
     var fob_costing = 0;
     var remark = $('#remark').val() || '';
     var type = "From Product Price";
+    var quantity = $('#quantity').val();
 
     
     var data = {
@@ -839,6 +846,7 @@ function update_proforma_detail_from_product_price() {
         fob_quotation: fob_quotation,
         fob_product_price: fob_product_price,
         fob_costing: fob_costing,
+        quantity: quantity,
         remark: remark,
         type : type
     };
@@ -873,4 +881,31 @@ function print_proforma_detail(id) {
     } else {
         alert('');
     }
+}
+
+
+function move_to_sales_quotes(proforma_id) {
+    // Buat modal jika belum ada
+    if ($('#modal_move_to_sales').length === 0) {
+        $('body').append(`
+            <div class="modal fade" id="modal_move_to_sales" tabindex="-1" role="dialog" aria-labelledby="moveToSalesModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content"></div>
+                </div>
+            </div>
+        `);
+    }
+
+    // Load isi modal dari controller
+    $.ajax({
+        url: 'proforma_quotation/move_to_sales_view/' + proforma_id, // <-- disamakan seperti fungsi update
+        type: 'GET',
+        success: function(data) {
+            $('#modal_move_to_sales .modal-content').html(data);
+            $('#modal_move_to_sales').modal('show');
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            bootbox.alert('Gagal memuat form Move to Sales: ' + errorThrown);
+        }
+    });
 }

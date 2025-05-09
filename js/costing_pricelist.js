@@ -188,24 +188,32 @@ function set_as_fixed_cost_sheet(costingid, ratevalue, profit_percentage, fixed_
 
 
 function create_price_list(costing_id,target_price, quantity, rate, price_rate, model_id, last_costing_price, customer_id,profit_percentage,fixed_cost,variable_cost,picklist_markup,port_origin_cost,picklist_rate,insurance,price_list_date,type) {
-    console.log("Target Price:", target_price);
-    console.log("Quantity:", quantity);
-    console.log("Rate:", rate);
-    console.log("Price Rate:", price_rate);
-    console.log("Model ID:", model_id);
-    console.log("Last Quotation Price:", last_costing_price);
-    console.log("Customer ID:", customer_id);
-    console.log("Profit Percentage:", profit_percentage);
-    console.log("Fixed Cost:", fixed_cost);
-    console.log("Variable Cost:", variable_cost);
-    console.log("Picklist Markup:", picklist_markup);
-    console.log("Port Origin Cost:", port_origin_cost);
-    console.log("Picklist Rate:", picklist_rate);
-    console.log("Insurance:", insurance);
+    var price_list_id = $("#existing_price_list").val();
+    console.log("=== DATA YANG DIKIRIM ===");
+    console.table({
+        price_list_id,
+        customer_id,
+        costing_id,
+        model_id,
+        quantity,
+        last_costing_price,
+        target_price,
+        rate,
+        price_rate,
+        profit_percentage,
+        fixed_cost,
+        variable_cost,
+        picklist_markup,
+        port_origin_cost,
+        picklist_rate,
+        insurance,
+        type
+    });
     $.post(url + 'costing_pricelist/create_price_list/', {
+        price_list_id : price_list_id,
+        customer_id : customer_id,
         costing_id : costing_id,
         model_id: model_id,
-        customer_id: customer_id,
         quantity: quantity,
         last_costing_price: last_costing_price,
         target_price: target_price,
@@ -218,7 +226,6 @@ function create_price_list(costing_id,target_price, quantity, rate, price_rate, 
         port_origin_cost : port_origin_cost,
         picklist_rate : picklist_rate,
         insurance : insurance,
-        price_list_date : price_list_date,
         type : type
     }).done(function(content) {
         if (content.success) {

@@ -343,4 +343,60 @@ public function deleteDetail($id) {
 }
 
 
+public function insert_sales($data) {
+    $this->db->insert('sales_quotes', $data);
+    return $this->db->insert_id();
+}
+
+/**
+ * Insert sales quotes detail
+ * 
+ * @param array $data Data untuk insert
+ * @return int ID dari sales quotes detail yang dibuat
+ */
+public function insertDetail_sales($data) {
+    $this->db->insert('sales_quotes_detail', $data);
+    return $this->db->insert_id();
+}
+
+public function selectById_sales($id) {
+    $this->db->where('id', $id);
+    $query = $this->db->get('sales_quotes');
+    return $query->row();
+}
+
+public function selectDetailBySalesQuotesId($sales_quotes_id) {
+    $this->db->where('sales_quotes_id', $sales_quotes_id);
+    $query = $this->db->get('sales_quotes_detail');
+    return $query->result();
+}
+
+
+public function selectDetailId($id) {
+    $this->db->where('id', $id);
+    $query = $this->db->get('proforma_quotation_detail');
+
+    // Cek apakah query berhasil
+    if ($query === false) {
+        // Log error jika query gagal
+        error_log('Query failed: ' . print_r($this->db->error(), true));
+        return false;
+    }
+
+    // Cek jika tidak ada hasil
+    if ($query->num_rows() === 0) {
+        error_log('No result found for ID: ' . $id);
+        return false;
+    }
+
+    return $query->row();
+}
+
+
+
+
+
+
+
+
 }

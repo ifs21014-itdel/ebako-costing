@@ -41,9 +41,13 @@
                     Create New Proforma Quotation Detail From Product Price
                 </button>
                 <<button class="btn btn-labeled fa fa-print btn-info" style="margin-right:5px;"
-    onclick="print_proforma_detail(<?php echo $proforma_quotation->id; ?>)">
-    Print Proforma Quotation Detail
-</button>
+                    onclick="print_proforma_detail(<?php echo $proforma_quotation->id; ?>)">
+                    Print Proforma Quotation Detail
+                </button>
+                <button class="btn btn-labeled fa fa-exchange btn-primary" style="margin-right:5px;"
+                    onclick="move_to_sales_quotes(<?php echo $proforma_quotation->id; ?>)">
+                    Move to Sales Quotation
+                </button>
             </div>
 
             

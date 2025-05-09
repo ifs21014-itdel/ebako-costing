@@ -72,11 +72,13 @@ class price_list extends CI_Controller {
     }
 
     public function detail($id) {
-        $data['price_list'] = $this->model_pricelist->selectById($id);
-        error_log('Isi detail price_list: ' . print_r($data['price_list'], true));
+        $data['price_list'] = $this->model_pricelist->selectById_detail($id);
+     
+        error_log(print_r($data, true)); 
         // Tambahkan accessmenu untuk tombol
         $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
-        
+      
+
         // Jika data tidak ditemukan, berikan pesan
         if ($data['price_list'] === null) {
             $this->session->set_flashdata('error', 'Data price list tidak ditemukan');
@@ -100,19 +102,15 @@ class price_list extends CI_Controller {
     /**
      * Create new price list form
      */
-    public function create() {
-        $data['customer'] = $this->model_customer->selectAll();
-        $data['models'] = $this->model_model->selectAll();
-        $this->load->view('price_list/create', $data);
-    }
+
     
     /**
      * Save new price list
      */
     public function save() {
         $data = array(
+            'price_list_id'=> $this->input->post('price_list_id'),
             'model_id' => $this->input->post('model_id'),
-            'customer_id' => $this->input->post('customer_id'),
             'quantity' => $this->input->post('quantity'),
             'last_quotation_price' => $this->input->post('last_quotation_price'),
             'target_price' => $this->input->post('target_price'),
@@ -126,7 +124,7 @@ class price_list extends CI_Controller {
             'created_by' => $this->session->userdata('id')
         );
         
-        $this->db->insert('price_list', $data);
+        $this->db->insert('price_list_detail', $data);
         echo 'success';
     }
     
@@ -137,6 +135,7 @@ class price_list extends CI_Controller {
      */
     public function update($id) {
         $data = array(
+            'price_list_id'=> $this->input->post('price_list_id'),
             'model_id' => $this->input->post('model_id'),
             'customer_id' => $this->input->post('customer_id'),
             'quantity' => $this->input->post('quantity'),
@@ -152,7 +151,7 @@ class price_list extends CI_Controller {
         );
         
         $this->db->where('id', $id);
-        $this->db->update('price_list', $data);
+        $this->db->update('price_list_detail', $data);
         echo 'success';
     }
 
@@ -178,7 +177,7 @@ public function update_status($id) {
     
     try {
         $this->db->where('id', $id);
-        $this->db->update('price_list', $data);
+        $this->db->update('price_list_detail', $data);
         echo 'success';
     } catch (Exception $e) {
         echo 'failed';
@@ -246,7 +245,7 @@ public function update_status($id) {
         
         try {
             $this->db->where('id', $id);
-            $this->db->update('price_list', $data);
+            $this->db->update('price_list_detail', $data);
             echo 'success';
         } catch (Exception $e) {
             echo 'failed';
@@ -254,6 +253,97 @@ public function update_status($id) {
         }
     }
 
+    public function create() {
+        $data = array(
+            'customer_id' => $this->input->post('customer_id'),
+            'price_list_date' => $this->input->post('price_list_date'),
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+            'created_by' => $this->session->userdata('id')
+        );
+     
+        
+        // Menyimpan data ke tabel 'price_list'
+        $this->db->insert('price_list', $data);
+        
+        // Mengirimkan respons JSON
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'message' => 'Price list berhasil dibuat'
+        ]);
+    }
+
+    public function get_by_customer($customer_id) {
+        // Mengambil daftar price list berdasarkan customer_id
+        $this->db->where('customer_id', $customer_id);
+        $this->db->order_by('price_list_date', 'DESC');
+        $query = $this->db->get('price_list');
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'data' => $query->result()
+        ]);
+        exit();
+    }
+
+
+    public function view_detail($id) {
+        // Ambil data utama price list
+        $data['price_list'] = $this->model_pricelist->selectById($id);
+        error_log('Isi detail price_list dedi: ' . print_r($data['price_list'], true));
+        
+        if (!$data['price_list']) {
+            echo '<div class="alert alert-danger">Price list data not found</div>';
+            return;
+        }
+        
+        // Ambil detail price list
+        $data['price_list_detail'] = $this->model_pricelist->getDetailByPriceListId($id);
+        
+        // Tambahkan accessmenu untuk tombol
+        $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
+        
+        // Load pagination data
+        $offset = 0;
+        $limit = $this->config->item('limit');
+        $data['num_rows'] = count($data['price_list_detail']);
+        $data['num_page'] = (int) ceil($data['num_rows'] / $limit);
+        $data['first'] = 0;
+        $data['offset'] = $offset;
+        $data['prev'] = (($offset - $limit) < 0) ? 0 : ($offset - $limit);
+        $data['next'] = (($offset + $limit) > $data['num_rows']) ? $offset : ($offset + $limit);
+        $data['last'] = ($data['num_page'] * $limit) > $data['num_rows'] ? (($data['num_page'] - 1) * $limit) : ($data['num_page'] * $limit);
+        $data['page'] = (int) ceil($offset / $limit) + 1;
+        
+        // Load view
+        $this->load->view('price_list/search_detail', $data);
+    }
+
+    public function search_detail() {
+        $model_name = $this->input->post('model_name');
+        $customer_name = $this->input->post('customer_name');
+        $customerid = $this->input->post('customerid');
+        $offset = $this->input->post('offset');
+        
+        $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
+        
+        $limit = $this->config->item('limit');
+        $data['num_rows'] = $this->model_pricelist->getNumRows_detail($model_name, $customer_name, $customerid);
+        $data['num_page'] = (int) ceil($data['num_rows'] / $limit);
+        $data['first'] = 0;
+        $data['offset'] = $offset;
+        $data['prev'] = (($offset - $limit) < 0) ? 0 : ($offset - $limit);
+        $data['next'] = (($offset + $limit) > $data['num_rows']) ? $offset : ($offset + $limit);
+        $data['last'] = ($data['num_page'] * $limit) > $data['num_rows'] ? (($data['num_page'] - 1) * $limit) : ($data['num_page'] * $limit);
+        $data['page'] = (int) ceil($offset / $limit) + 1;
+        $data['price_list'] = $this->model_pricelist->search_detail($model_name, $customer_name, $customerid, $limit, $offset);
+        
+        $this->load->view('price_list/search_detail', $data);
+    }
+
+    
 
     
 }

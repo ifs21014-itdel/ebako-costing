@@ -411,6 +411,47 @@ class product_price extends CI_Controller {
     }
 }
 
+/**
+ * Mendapatkan daftar sales quotation yang disetujui
+ */
+public function get_approved_quotations() {
+    $customer_id = $this->input->get('customer_id');
+    
+    // Load model yang diperlukan
+    $this->load->model('model_productprice');
+    $this->load->model('model_customer');
+    
+    // Query untuk mendapatkan sales_quotes_detail yang disetujui
+    $data['quotations'] = $this->model_productprice->get_approved_quotations($customer_id);
+    
+    $this->load->view('product_price/approved_quotations', $data);
+}
+
+/**
+ * Mengimpor sales quotation detail ke dalam product_price
+ */
+public function import_quotations() {
+    $quotation_details = $this->input->post('quotation_details');
+    
+    if (empty($quotation_details)) {
+        echo json_encode(['success' => false, 'message' => 'Tidak ada quotation yang dipilih']);
+        return;
+    }
+    
+    $this->load->model('model_productprice');
+    
+    $success = $this->model_productprice->import_quotations_to_product_price($quotation_details);
+    
+    if ($success) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Gagal mengimpor data']);
+    }
+}   
+
+
+
+
 
 }
 
