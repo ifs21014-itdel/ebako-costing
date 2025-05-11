@@ -1058,6 +1058,7 @@ class model_costing extends CI_Model {
         $valid_date = $this->input->get('valid_date');
         $qnewnumber = $this->input->get('quonumber');
         $insurance = $this->input->get('insurance');
+        $description = $this->input->get('description');
         
         // Mendapatkan data quantities yang dikirim dari controller
         $quantities_json = urldecode($this->input->get('quantities'));
@@ -1107,6 +1108,7 @@ class model_costing extends CI_Model {
                     "picklist_markup" => (double) $picklist_mark_up,
                     "parent_sales_quotes_id" => (int) $parent_sales_quotes_id,
                     "prev_quo_date" => $prev_quo_date,
+                    "valid_date" => $valid_date,
                     "valid_date" => $valid_date,
                     "insurance" => (double) $insurance,
                     "created_at" => date('Y-m-d H:i:s'),

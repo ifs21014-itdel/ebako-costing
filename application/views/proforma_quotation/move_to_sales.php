@@ -18,8 +18,8 @@
         </div>
 
         <div class="form-group">
-            <label for="quotation_number">Sales Quotation Number*</label>
-            <input type="text" class="form-control" id="quotation_number" name="quotation_number" value="<?php echo $proforma_quotation->number; ?>" required>
+            <label for="description">Description*</label>
+            <input type="text" class="form-control" id="description" name="description"   required>
         </div>
 
         <div class="form-group">
@@ -95,8 +95,8 @@ function do_move_to_sales() {
         return false;
     }
 
-    if (!$('#quotation_number').val()) {
-        bootbox.alert('Please enter a Sales Quotation Number.');
+    if (!$('#description').val()) {
+        bootbox.alert('Please enter Description.');
         return false;
     }
 
@@ -104,7 +104,7 @@ function do_move_to_sales() {
     const formData = {
         proforma_quotation_id: $('#proforma_quotation_id').val(),
         customer_id: $('#customer_id').val(),
-        quotation_number: $('#quotation_number').val(),
+        description: $('#description').val(),
         quo_date: $('#quo_date').val(),
         items: []
     };

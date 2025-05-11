@@ -611,10 +611,13 @@ class proforma_quotation extends CI_Controller {
                 'customer_id' => $json_data['customer_id'],
                 'quotation_number' =>$quotation_number,
                 'quo_date' => $json_data['quo_date'],
+                'description' => $json_data['description'],
                 'created_at' => date('Y-m-d H:i:s'),
                 'created_by' => $this->session->userdata('id')
             ];
             
+            error_log(print_r($sales_quotes_data, true));
+
             // Insert sales quotes
             $result = $this->model_salesquotes->insert($sales_quotes_data);
             

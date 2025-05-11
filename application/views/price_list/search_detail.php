@@ -21,8 +21,11 @@
                         <button class="btn btn-primary" id="toggle_column_btn">
                             <i class="fa fa-columns"></i> Select Column
                         </button>
-                        <button class="btn btn-info btn-print-selected" onclick="printSelectedRows()">
+                        <button class="btn btn-info btn-print-selected" onclick="printSelectedRows('standard')">
                             <i class="fa fa-print"></i> Print Selected
+                        </button>
+                        <button class="btn btn-success btn-print-project" onclick="printSelectedRows('project')">
+                            <i class="fa fa-file-text"></i> Print as Project
                         </button>
                         <?php if (in_array('create', $accessmenu)) { ?>
                             <button class="btn btn-primary" onclick="window.location.href='<?php echo base_url(); ?>index.php/price_list/create'">
@@ -100,7 +103,7 @@
                         <label class="form-check-label" for="col_customer_name">Customer Name</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input column-checkbox" type="checkbox" value="quantity" id="col_quantity" checked>
+                        <input class="form-check-input column-checkbox print-option-standard" type="checkbox" value="quantity" id="col_quantity" checked>
                         <label class="form-check-label" for="col_quantity">Quantity</label>
                     </div>
                     <div class="form-check">
@@ -170,7 +173,6 @@
         </div>
     </div>
 </div>
-
 <!-- Tambahkan header kolom selection -->
 <table id="table_price_list" class="table table-striped table-bordered" cellspacing="0">
     <thead>
@@ -373,7 +375,7 @@
         $('.print_checkbox').prop('checked', isChecked);
     }
 
-    $(document).ready(function () {
+ $(document).ready(function () {
         // DataTable inisialisasi
         var table = $('#table_price_list').DataTable({
             scrollY: "300px",
@@ -386,9 +388,11 @@
             autoWidth: true,
             select: true,
         });
+        
         $("#toggle_column_btn").click(function() {
-        $("#column_selection").collapse('toggle');
-    });
+            $("#column_selection").collapse('toggle');
+        });
+        
         // Toggle visibilitas panel pemilihan kolom
         $('#column_selection_panel .panel-heading').click(function() {
             $('#column_selection').collapse('toggle');
@@ -406,12 +410,16 @@
 
         // Tambahkan kondisi validasi sebelum print
         $(document).on('click', '.btn-print-selected', function() {
-            printSelectedRows();
+            printSelectedRows('standard');
+        });
+        
+        $(document).on('click', '.btn-print-project', function() {
+            printSelectedRows('project');
         });
     });
 
     // Fungsi untuk mencetak baris yang dipilih dengan kolom yang dipilih
-    function printSelectedRows() {
+    function printSelectedRows(printType) {
         var selectedIds = [];
         var selectedColumns = [];
         
@@ -427,8 +435,19 @@
         
         // Mengumpulkan kolom yang dipilih
         $('.column-checkbox:checked').each(function() {
+            // Jika tipe print standard, skip kolom quantity
+            if (printType === 'standard' && $(this).val() === 'quantity') {
+                return true; // Skip quantity untuk standard print
+            }
             selectedColumns.push($(this).val());
         });
+
+        // Pastikan quantity disertakan untuk tipe print project
+        if (printType === 'project') {
+            if (!selectedColumns.includes('quantity')) {
+                selectedColumns.push('quantity');
+            }
+        }
         
         if (selectedColumns.length === 0) {
             alert("Please select at least one column to print.");
@@ -436,7 +455,9 @@
         }
         
         // Redirect ke halaman print dengan parameter IDs yang dipilih dan kolom yang dipilih
-        var url = base_url + 'index.php/price_list/print_price_list?ids=' + selectedIds.join(',') + '&columns=' + selectedColumns.join(',');
+        var url = base_url + 'index.php/price_list/print_price_list?ids=' + 
+                  selectedIds.join(',') + '&columns=' + selectedColumns.join(',') + 
+                  '&print_type=' + printType;
         window.open(url, '_blank');
     }
 </script>

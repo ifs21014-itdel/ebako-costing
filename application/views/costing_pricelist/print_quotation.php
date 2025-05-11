@@ -209,6 +209,7 @@
                                 echo $result->q_finishes;
                                 ?> 
                             </td>
+                             <?php if (isset($quotation[0]->parent_sales_quotes_id) && (int) $quotation[0]->parent_sales_quotes_id !== 0): ?>      
                             <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
                                 <?php
                                 if ($insurance > 0) {
@@ -217,6 +218,7 @@
                                 echo number_format(round($result->  fob_price_before)) . ".00";
                                 ?> 
                             </td>
+                             <?php endif; ?>
                             <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
                                 <?php
                                 if ($insurance > 0) {
