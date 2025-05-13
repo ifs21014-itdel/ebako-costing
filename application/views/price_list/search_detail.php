@@ -1,7 +1,6 @@
 <?php
-/**
- * Search file for Price List
- */
+// Di awal file search_detail.php
+
 ?>
 
 <!-- Menambahkan panel pencarian -->
@@ -11,11 +10,12 @@
             <td>
                 <div align="left" class="form-inline" style="padding-top: 2px; margin-bottom: 15px;">
                     <div class="col-sm-8">
+                        <input type="hidden" id="current_price_list_id" value="<?php echo isset($price_list_id) ? $price_list_id : 0; ?>">
                         <input type="hidden" id="pricelistid" value="0" /> <span class="labelelement">Find :</span> 
                         <input class="form-control" type="text" name="model_name_s" placeholder="Model Name" id="model_name_s" size="10" onkeypress="if (event.keyCode == 13) {
-                                    pricelist_search_detail(0);
+                                    pricelist_search_detail(document.getElementById('current_price_list_id').value,0);
                                 }" /> 
-                        <button class="btn btn-default" onclick="pricelist_search_detail(0)">Search</button>
+                        <button class="btn btn-default" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,0)">Search</button>
                     </div>
                     <div class="col-sm-4 text-right">
                         <button class="btn btn-primary" id="toggle_column_btn">
@@ -48,17 +48,17 @@
         <input type="hidden" id="offset" value="<?php echo ($offset < 1 ? 0 : ($offset - 1) ); ?>" />
         <ul class="pagination">
             <li class="">
-                <a class="page-link-2" style="color: #167495;cursor: pointer;" onclick="pricelist_search_detail(0)">
+                <a class="page-link-2" style="color: #167495;cursor: pointer;" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,0)">
                     <strong><span class="fa fa-refresh"></span> Refresh</strong>
                 </a> 
             </li>
             <li class="">&nbsp;&nbsp;&nbsp;&nbsp;</li>
 
             <li class="page-item">
-                <a class="page-link" href="#" onclick="pricelist_search_detail(<?php echo $first; ?>)">First</a>
+                <a class="page-link" href="#" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,<?php echo $first; ?>)">First</a>
             </li>
             <li class="page-item">
-                <a class="page-link" href="#" aria-label="Previous" onclick="pricelist_search_detail(<?php echo $prev; ?>)">
+                <a class="page-link" href="#" aria-label="Previous" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,<?php echo $prev; ?>)">
                     <img src="<?php echo base_url(); ?>images/prev.png" class="miniaction"/>
                 </a>
             </li>
@@ -68,13 +68,13 @@
             </li>
 
             <li class="page-item">
-                <a class="page-link" href="#" aria-label="Next" onclick="pricelist_search_detail(<?php echo $next; ?>)">
+                <a class="page-link" href="#" aria-label="Next" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,<?php echo $next; ?>)">
                     <img src="<?php echo base_url(); ?>images/next.png" class="miniaction"/>
                 </a>
             </li>
 
             <li class="page-item">
-                <a class="page-link" href="#" onclick="pricelist_search_detail(<?php echo $last; ?>)">Last</a>
+                <a class="page-link" href="#" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,<?php echo $last; ?>)">Last</a>
             </li>
             <li class="">&nbsp;&nbsp;&nbsp;&nbsp;</li>
             <li class="">
@@ -376,24 +376,57 @@
     }
 
  $(document).ready(function () {
-        // DataTable inisialisasi
-        var table = $('#table_price_list').DataTable({
-            scrollY: "300px",
-            scrollX: true,
-            scrollCollapse: true,
-            paging: false,
-            ordering: false,
-            info: false,
-            searching: false,
-            autoWidth: true,
-            select: true,
+        // Perbaikan struktur tabel untuk DataTables
+        if ($('#table_price_list').find('tbody').length === 0) {
+            // Tambahkan elemen tbody jika belum ada
+            $('#table_price_list').append('<tbody></tbody>');
+            
+            // Pindahkan semua baris data (selain header) ke tbody
+            $('#table_price_list tr:not(thead tr)').appendTo('#table_price_list tbody');
+        }
+        
+        // Periksa dan perbaiki jumlah kolom di setiap baris
+        var headerColumns = $('#table_price_list thead tr:first th').length;
+        $('#table_price_list tbody tr').each(function() {
+            var rowColumns = $(this).find('td').length;
+            if (rowColumns !== headerColumns) {
+                console.warn('Baris dengan jumlah kolom yang tidak sama ditemukan: ' + rowColumns + ' vs ' + headerColumns);
+                // Tambahkan sel kosong jika kurang
+                for (var i = rowColumns; i < headerColumns; i++) {
+                    $(this).append('<td></td>');
+                }
+            }
         });
         
+        // DataTable inisialisasi dengan error handling dan opsi tambahan
+        try {
+            var table = $('#table_price_list').DataTable({
+                scrollY: "300px",
+                scrollX: true,
+                scrollCollapse: true,
+                paging: false,
+                ordering: false,
+                info: false,
+                searching: false,
+                autoWidth: true,
+                select: true,
+                retrieve: true, // Mencegah inisialisasi ganda
+                columnDefs: [
+                    { targets: '_all', defaultContent: '' } // Mengisi sel kosong
+                ]
+            });
+        } catch (e) {
+            console.error("DataTables error:", e);
+            
+            // Fallback jika DataTables gagal diinisialisasi
+            $('#table_price_list').addClass('table-responsive');
+        }
+        
+        // Toggle visibilitas panel pemilihan kolom
         $("#toggle_column_btn").click(function() {
             $("#column_selection").collapse('toggle');
         });
         
-        // Toggle visibilitas panel pemilihan kolom
         $('#column_selection_panel .panel-heading').click(function() {
             $('#column_selection').collapse('toggle');
         });
@@ -401,12 +434,46 @@
         // Pilih semua kolom
         $('#select_all_columns').click(function() {
             $('.column-checkbox').prop('checked', true);
+            updateColumnVisibility();
         });
         
         // Batalkan semua kolom
         $('#unselect_all_columns').click(function() {
             $('.column-checkbox').prop('checked', false);
+            updateColumnVisibility();
         });
+        
+        // Tambahkan event listener untuk checkbox kolom
+        $('.column-checkbox').change(function() {
+            updateColumnVisibility();
+        });
+        
+        // Fungsi untuk memperbarui visibilitas kolom
+        function updateColumnVisibility() {
+            if ($.fn.dataTable.isDataTable('#table_price_list')) {
+                $('.column-checkbox').each(function() {
+                    var columnName = $(this).val();
+                    var isVisible = $(this).prop('checked');
+                    
+                    // Cari indeks kolom berdasarkan nama kolom
+                    var columnIndex = -1;
+                    $('#table_price_list thead th').each(function(index) {
+                        if ($(this).text().trim().toLowerCase().includes(columnName.replace(/_/g, ' '))) {
+                            columnIndex = index;
+                            return false; // Hentikan pencarian
+                        }
+                    });
+                    
+                    if (columnIndex > 1) { // Abaikan kolom checkbox dan No
+                        try {
+                            table.column(columnIndex).visible(isVisible);
+                        } catch (e) {
+                            console.warn("Tidak dapat mengubah visibilitas kolom:", columnName, e);
+                        }
+                    }
+                });
+            }
+        }
 
         // Tambahkan kondisi validasi sebelum print
         $(document).on('click', '.btn-print-selected', function() {
@@ -439,6 +506,20 @@
             if (printType === 'standard' && $(this).val() === 'quantity') {
                 return true; // Skip quantity untuk standard print
             }
+            if (printType === 'standard' && $(this).val() === 'total_last_costing') {
+                return true; // Skip quantity untuk standard print
+            }
+            if (printType === 'standard' && $(this).val() === 'total_last_quotation') {
+                return true; // Skip quantity untuk standard print
+            }
+            if (printType === 'standard' && $(this).val() === 'total_target_price') {
+                return true; // Skip quantity untuk standard print
+            }
+             if (printType === 'standard' && $(this).val() === 'total_price_rate') {
+                return true; // Skip quantity untuk standard print
+            }
+            
+            
             selectedColumns.push($(this).val());
         });
 
@@ -530,7 +611,7 @@
                 if (data === 'success') {
                     $('#approvalModal').modal('hide');
                     alert("Approval berhasil disimpan");
-                    pricelist_search(<?php echo $offset; ?>); // Refresh tampilan
+                    pricelist_search(<?php echo isset($offset) ? $offset : 0; ?>); // Tambahkan pengecekan isset
                 } else {
                     alert("Gagal menyimpan approval");
                 }

@@ -40,7 +40,7 @@
                     onclick="proforma_createnewdetail_from_product_price(<?php echo $proforma_quotation->id; ?>, <?php echo $proforma_quotation->customer_id; ?>)">
                     Create New Proforma Quotation Detail From Product Price
                 </button>
-                <<button class="btn btn-labeled fa fa-print btn-info" style="margin-right:5px;"
+                <button class="btn btn-labeled fa fa-print btn-info" style="margin-right:5px;"
                     onclick="print_proforma_detail(<?php echo $proforma_quotation->id; ?>)">
                     Print Proforma Quotation Detail
                 </button>

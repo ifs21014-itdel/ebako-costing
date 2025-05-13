@@ -57,22 +57,25 @@ function pricelist_search(offset) {
 function pricelist_search_detail(proforma_quotation_id, offset) {
     var model_name = $('#model_name_s').val();
     var customer_name = $('#customer_name_s').val();
-     var customerid = $('#customerid_search').val();
-    
+    var customerid = $('#customerid_search').val();
+    console.log(proforma_quotation_id);
+
     $.ajax({
         url: base_url + "index.php/price_list/search_detail",
         type: "POST",
         data: {
             model_name: model_name,
-           customer_name: customer_name,
-             customerid: customerid,
-        offset: offset
+            customer_name: customer_name,
+            customerid: customerid,
+            offset: offset,
+            proforma_quotation_id: proforma_quotation_id // <-- ditambahkan
         },
         success: function(data) {
             $('#detail_section').html(data);
         }
     });
 }
+
 
 /**
  * View price list detail

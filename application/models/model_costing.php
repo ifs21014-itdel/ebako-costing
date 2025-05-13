@@ -1109,7 +1109,7 @@ class model_costing extends CI_Model {
                     "parent_sales_quotes_id" => (int) $parent_sales_quotes_id,
                     "prev_quo_date" => $prev_quo_date,
                     "valid_date" => $valid_date,
-                    "valid_date" => $valid_date,
+                    "description" => $description,
                     "insurance" => (double) $insurance,
                     "created_at" => date('Y-m-d H:i:s'),
                     "created_by" => $createby,

@@ -316,32 +316,55 @@ public function update_status($id) {
         $data['next'] = (($offset + $limit) > $data['num_rows']) ? $offset : ($offset + $limit);
         $data['last'] = ($data['num_page'] * $limit) > $data['num_rows'] ? (($data['num_page'] - 1) * $limit) : ($data['num_page'] * $limit);
         $data['page'] = (int) ceil($offset / $limit) + 1;
+        $data['price_list_id'] = $id;
+        error_log('Isi price_list_id: ' . $data['price_list_id']);
+
         
         // Load view
         $this->load->view('price_list/search_detail', $data);
     }
 
-    public function search_detail() {
-        $model_name = $this->input->post('model_name');
-        $customer_name = $this->input->post('customer_name');
-        $customerid = $this->input->post('customerid');
-        $offset = $this->input->post('offset');
-        
-        $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
-        
-        $limit = $this->config->item('limit');
-        $data['num_rows'] = $this->model_pricelist->getNumRows_detail($model_name, $customer_name, $customerid);
-        $data['num_page'] = (int) ceil($data['num_rows'] / $limit);
-        $data['first'] = 0;
-        $data['offset'] = $offset;
-        $data['prev'] = (($offset - $limit) < 0) ? 0 : ($offset - $limit);
-        $data['next'] = (($offset + $limit) > $data['num_rows']) ? $offset : ($offset + $limit);
-        $data['last'] = ($data['num_page'] * $limit) > $data['num_rows'] ? (($data['num_page'] - 1) * $limit) : ($data['num_page'] * $limit);
-        $data['page'] = (int) ceil($offset / $limit) + 1;
-        $data['price_list'] = $this->model_pricelist->search_detail($model_name, $customer_name, $customerid, $limit, $offset);
-        
-        $this->load->view('price_list/search_detail', $data);
+  public function search_detail() {
+    $model_name = $this->input->post('model_name');
+    $customer_name = $this->input->post('customer_name');
+    $customerid = $this->input->post('customerid');
+    $offset = $this->input->post('offset');
+    $proforma_quotation_id = $this->input->post('proforma_quotation_id'); // <-- tambahkan ini
+
+    // Log untuk mengecek apakah proforma_quotation_id sudah diterima dengan benar
+    error_log('DEBUG: Price List Detail ID dedi = ' . $proforma_quotation_id);
+
+
+    // Memastikan akses menu tersedia
+    $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
+
+    // Menentukan limit dan menghitung total halaman
+    $limit = $this->config->item('limit');
+    $data['num_rows'] = $this->model_pricelist->getNumRows_detail($model_name, $customer_name, $customerid, $proforma_quotation_id);
+    $data['num_page'] = (int) ceil($data['num_rows'] / $limit);
+    $data['first'] = 0;
+    $data['offset'] = $offset;
+    $data['prev'] = (($offset - $limit) < 0) ? 0 : ($offset - $limit);
+    $data['next'] = (($offset + $limit) > $data['num_rows']) ? $offset : ($offset + $limit);
+    $data['last'] = ($data['num_page'] * $limit) > $data['num_rows'] ? (($data['num_page'] - 1) * $limit) : ($data['num_page'] * $limit);
+    $data['page'] = (int) ceil($offset / $limit) + 1;
+
+    // Ambil data price list dengan pencarian detail
+    $data['price_list'] = $this->model_pricelist->search_detail($model_name, $customer_name, $customerid, $proforma_quotation_id, $limit, $offset);
+
+    // Log semua ID detail price list
+    if (!empty($data['price_list'])) {
+        foreach ($data['price_list'] as $item) {
+            error_log('DEBUG: Price List Detail ID = ' . $item->id);
+        }
+    } else {
+        error_log('DEBUG: Tidak ada data price_list_detail yang ditemukan.');
     }
+
+    // Render tampilan dengan data
+    $this->load->view('price_list/search_detail', $data);
+}
+
 
     
 

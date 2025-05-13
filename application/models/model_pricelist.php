@@ -190,49 +190,16 @@ class model_pricelist extends CI_Model {
     }
     
 
-    function search_detail($model_name = '', $customer_name = '', $customer_id = 0, $limit, $offset) {
-        try {
-            $this->db->select('price_list_detail.*, customer.name AS customer_name, model.no AS model_no, model.description AS model_description');
-            $this->db->from('price_list_detail');
-            $this->db->join('customer', 'price_list_detail.customer_id = customer.id', 'left');
-            $this->db->join('model', 'price_list_detail.model_id = model.id', 'left');
-            
-            // Filter pencarian
-            if (!empty($model_name)) {
-                $this->db->like('model.no', $model_name); // ganti model.name jadi model.no
-            }
-            if (!empty($customer_name)) {
-                $this->db->like('customer.name', $customer_name);
-            }
-            if (!empty($customer_id) && $customer_id != 0) {
-                $this->db->where('price_list_detail.customer_id', $customer_id);
-            }
-        
-            // Limit dan offset untuk pagination
-            $this->db->limit($limit, $offset);
-            $this->db->order_by('price_list_detail.updated_at', 'DESC');
-        
-            $query = $this->db->get();
-            
-            if ($query === FALSE) {
-                return array();
-            }
-            
-            return $query->result();
-        } catch (Exception $e) {
-            return array();
-        }
-    }
-    
-    function getNumRows_detail($model_name = '', $customer_name = '', $customer_id = 0) {
-        $this->db->select('COUNT(*) as total');
+    function search_detail($model_name = '', $customer_name = '', $customer_id = 0, $price_list_id = null, $limit, $offset) {
+        error_log("wilo".$price_list_id);
+    try {
+        $this->db->select('price_list_detail.*, customer.name AS customer_name, model.no AS model_no, model.description AS model_description');
         $this->db->from('price_list_detail');
         $this->db->join('customer', 'price_list_detail.customer_id = customer.id', 'left');
         $this->db->join('model', 'price_list_detail.model_id = model.id', 'left');
-    
-        // Menambahkan filter jika ada
+
         if (!empty($model_name)) {
-            $this->db->like('model.name', $model_name);
+            $this->db->like('model.no', $model_name);
         }
         if (!empty($customer_name)) {
             $this->db->like('customer.name', $customer_name);
@@ -240,15 +207,43 @@ class model_pricelist extends CI_Model {
         if (!empty($customer_id) && $customer_id != 0) {
             $this->db->where('price_list_detail.customer_id', $customer_id);
         }
-        
-        $query = $this->db->get();
-    
-        // Debugging untuk melihat hasil query
-        if (!$query) {
-            log_message('error', 'Query Failed: ' . $this->db->last_query());
-            return 0;
+        if (!empty($price_list_id)) {
+            $this->db->where('price_list_detail.price_list_id', $price_list_id); // <-- tambahkan filter ini
         }
-    
-        return $query->row()->total;
+
+        $this->db->limit($limit, $offset);
+        $this->db->order_by('price_list_detail.updated_at', 'DESC');
+
+        $query = $this->db->get();
+        return $query ? $query->result() : [];
+    } catch (Exception $e) {
+        return [];
     }
+}
+
+    
+   function getNumRows_detail($model_name = '', $customer_name = '', $customer_id = 0, $price_list_id = null) {
+    error_log("wilo".$price_list_id);
+    $this->db->select('COUNT(*) as total');
+    $this->db->from('price_list_detail');
+    $this->db->join('customer', 'price_list_detail.customer_id = customer.id', 'left');
+    $this->db->join('model', 'price_list_detail.model_id = model.id', 'left');
+
+    if (!empty($model_name)) {
+        $this->db->like('model.name', $model_name);
+    }
+    if (!empty($customer_name)) {
+        $this->db->like('customer.name', $customer_name);
+    }
+    if (!empty($customer_id) && $customer_id != 0) {
+        $this->db->where('price_list_detail.customer_id', $customer_id);
+    }
+    if (!empty($price_list_id)) {
+        $this->db->where('price_list_detail.price_list_id', $price_list_id); // <-- tambah juga di sini
+    }
+
+    $query = $this->db->get();
+    return $query ? $query->row()->total : 0;
+}
+
 }

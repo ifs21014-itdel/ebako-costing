@@ -355,45 +355,65 @@ public function import_quotations_to_product_price($quotation_detail_ids) {
     if (empty($quotation_detail_ids)) {
         return false;
     }
-    
+
     $this->db->trans_start();
-    
+
     foreach ($quotation_detail_ids as $id) {
-        // Ambil detail quotation yang akan diimpor
-        $this->db->select('sqd.*, sq.quotation_number, sq.customer_id, sq.quo_date,sq.approved_date,
+        $this->db->select('sqd.*, sq.quotation_number, sq.customer_id, sq.quo_date, sq.approved_date,
                            m.no as model_no, m.custcode, m.description');
         $this->db->from('sales_quotes_detail sqd');
         $this->db->join('sales_quotes sq', 'sq.id = sqd.sales_quotes_id', 'left');
         $this->db->join('model m', 'sqd.costingid = m.id', 'left');
         $this->db->where('sqd.id', $id);
         $query = $this->db->get();
+
+        if (!$query) {
+            // Log error to error_log using _error_message() and _error_number()
+            error_log('Query error (get quotation): ' . $this->db->_error_message() . ' | Error number: ' . $this->db->_error_number());
+            continue;
+        }
+
         $quotation = $query->row();
-        
+
         if ($quotation) {
+            // Check if model_no (ebako_code) is null and assign a default value if necessary
+            $ebako_code = $quotation->model_no ? $quotation->model_no : '-';
+
             $data = [
-                'ebako_code'    => $quotation->model_no,
+                'ebako_code'    => $ebako_code,
                 'customer_id'   => $quotation->customer_id,
-                'quotation_id' => $quotation->id,
+                'quotation_id'  => $quotation->id,
                 'material'      => $quotation->q_wood,
                 'quotation_date'=> $quotation->quo_date,
-                'approval_date' =>  $quotation->approved_date,
+                'approval_date' => $quotation->approved_date,
                 'cw'            => $quotation->cw,
                 'cd'            => $quotation->cd,
                 'ch'            => $quotation->ch,
                 'q_finished'    => $quotation->q_finishes,
                 'fob'           => $quotation->fob_price,
-                'customercode'  => $quotation->custcode, // ✅ Menggunakan custcode yang benar
+                'customercode'  => $quotation->custcode,
                 'description'   => $quotation->description
             ];
-            
-            $this->db->insert('product_price', $data);
+
+            $insert = $this->db->insert('product_price', $data);
+
+            if (!$insert) {
+                // Log insert error to error_log using _error_message() and _error_number()
+                error_log('Insert error (product_price): ' . $this->db->_error_message() . ' | Error number: ' . $this->db->_error_number());
+            }
         }
     }
-    
+
     $this->db->trans_complete();
-    
+
+    if ($this->db->trans_status() === false) {
+        // Log transaction failure to error_log
+        error_log('Transaction failed during import_quotations_to_product_price.');
+    }
+
     return $this->db->trans_status();
 }
+
 
 
 

@@ -306,12 +306,20 @@
                                         <input type="hidden" name="parentid" id="parentid" size="50" value="<?php echo $_GET['parentid']; ?>">
                                     </th>
                                 </tr>
+                              <!-- Perbaikan susunan tag tr dan th -->
+<!-- Perbaikan susunan tag tr dan th -->
                                 <tr>
-                                    <th colspan="16"> <b>Valid Until : </b>
+                                    <th colspan="16"> 
+                                        <b>Valid Until : </b>
                                         <input type="date" name="valid_date" id="valid_date_id"/>
                                     </th>
+                                    <th colspan="16">
+                                        <b>Description:</b> 
+                                        <input type="text" name="description" id="description_id"/> 
+                                    </th>
                                 </tr>
-                                <tr>
+                               
+                                    <tr>
                                     <td colspan="17">
                                         <input type="checkbox" name=wood id="wood_id" checked="true">Wood &nbsp;&nbsp;
                                         <input type="checkbox" name="veneer" id="veneer_id" value="1" checked="true">Veneer &nbsp;&nbsp;
@@ -630,6 +638,7 @@
             //alert(ref);
             var cust = $('#quo_cust_id').val();
             var valid_date = $('#valid_date_id').val();
+            var description = $('#description_id').val();
             var custid = $('#quo_custid_id').val();
             var pick_list_rate_value_id = $('#pick_list_rate_value_id').val();
             var picklist_mark_up_id = $('#picklist_mark_up_id').val();
@@ -668,6 +677,7 @@
                     + "&box_dim=" + box_dim
                     + "&cube=" + cube
                     + "&valid_date=" + valid_date
+                    + "&description=" + encodeURIComponent(description)
                     + "&custid=" + custid
                     + "&pick_list_rate_value=" + pick_list_rate_value_id
                     + "&picklist_mark_up=" + picklist_mark_up_id
