@@ -184,6 +184,48 @@ public function update_status($id) {
         log_message('error', 'Error updating price list status: ' . $e->getMessage());
     }
 }
+
+public function update_price_quantity($id) {
+        // Periksa aksesibilitas
+        $accessmenu = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
+        if (!in_array('edit', $accessmenu)) {
+            echo 'unauthorized';
+            return;
+        }
+        
+        // Ambil data dari form
+        $quantity = $this->input->post('quantity');
+        $target_price = $this->input->post('target_price');
+        
+        // Validasi input
+        if (empty($quantity) || empty($target_price) || !is_numeric($quantity) || !is_numeric($target_price)) {
+            echo 'invalid';
+            return;
+        }
+        
+        // Siapkan data untuk update
+        $data = array(
+            'quantity' => $quantity,
+            'target_price' => $target_price,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('id')
+        );
+        
+        try {
+            // Update database
+            $this->db->where('id', $id);
+            $this->db->update('price_list_detail', $data);
+            
+            // Kalkulasi ulang price_rate jika diperlukan
+            // Ini opsional, tergantung pada logika bisnis Anda
+            // $this->recalculate_price_rate($id);
+            
+            echo 'success';
+        } catch (Exception $e) {
+            echo 'failed';
+            log_message('error', 'Error updating price list quantity and target price: ' . $e->getMessage());
+        }
+    }
     
     /**
      * Delete price list

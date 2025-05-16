@@ -1,9 +1,27 @@
 <script src="js/sales_quotes.js"></script>
 <br/>
-<div id="sales_quotes-tabs" class="tab-base">
-    <ul class="nav nav-tabs">
-        <li><a data-toggle="tab" href="#sales_quotes_detail_56y">Item / Product</a></li>
-    </ul>
+    <div id="sales_quotes-tabs" class="tab-base">
+        <div class="row" style="margin-bottom: 10px;">
+        <div class="col-md-8">
+            <ul class="nav nav-tabs">
+                <li><a data-toggle="tab" href="#sales_quotes_detail_56y">Item / Product</a></li>
+            </ul>
+        </div>
+        <div class="col-md-4 text-right">
+            <div class="input-group" style="max-width: 300px; float: right;">
+                <select class="form-control" id="modelDropdown">
+                    <option value="">-- Select Model --</option>
+                    <?php foreach ($models as $model): ?>
+                        <option value="<?= $model->id ?>"><?= $model->name ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="button" onclick="onSelectModel(<?= $id ?>)">Go</button>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <div class="tab-content">
         <div id="sales_quotes_detail_56y" class="tab-detail tab-pane fade active in">
             <div style="margin-top: 5px;margin-bottom: 6px">

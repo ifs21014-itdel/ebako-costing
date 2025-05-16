@@ -126,6 +126,52 @@ class model_sales_quotes extends CI_Model {
         return $this->db->query($query)->result();
     }
 
+
+      function update_parent_sales($sales_quotes_id, $model_id) {
+        // First, find the sales quotes ID associated with this model
+        
+        
+            
+            // Update parent_sales_quotes_id in the current sales_quotes
+            $this->db->where('id', $sales_quotes_id);
+            $this->db->update('sales_quotes', array('parent_id' => $model_id));
+            
+            return $this->db->affected_rows() > 0;
+      
+    }
+    //  function selectById($id) {
+    //     $this->db->where('id', $id);
+    //     return $this->db->get('sales_quotes')->result();
+    // }
+    
+    // Function to get related models for dropdown
+  function getRelatedModels($id) {
+    $sql = "SELECT DISTINCT 
+                model.id, 
+                model.no,
+                CONCAT(model.no, ' - ', model.custcode, ' - ', model.description) as name
+            FROM model
+            JOIN costing cos ON model.id = cos.modelid
+            JOIN sales_quotes_detail sqd ON cos.id = sqd.costingid
+            JOIN sales_quotes sq ON sqd.sales_quotes_id = sq.id
+            WHERE sq.id = ?
+            ORDER BY model.no ASC";
+
+    $query = $this->db->query($sql, [$id]);
+
+    if (!$query) {
+        error_log('Query failed: ' . $this->db->_error_message());
+        return [];
+    }
+
+    return $query->result();
+}
+
+
+
+
+
+
     function getModelAvailable() {
         $query = "select 
                   model.*,

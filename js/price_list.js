@@ -100,17 +100,25 @@ function price_list_viewdetail(id) {
  * @param {int} id - Price list ID
  */
 function price_list_edit(id) {
-    $.ajax({
-        url: base_url + "index.php/price_list/edit/" + id,
-        type: "GET",
-        success: function(data) {
-            $('#pricelistdata').html(data);
-        },
-        error: function(xhr, status, error) {
-            console.error("Error pada edit: " + error);
-            alert("Terjadi kesalahan saat mengedit data. Silakan coba lagi.");
-        }
+    App.createContainer('pricelist_temp');
+    bbox = bootbox.dialog({
+        title: 'Edit Price List',
+        message: $('#pricelist_temp'),
+        closeButton: true,
     });
+    bbox.init(function () {
+        $.get('price_list/edit/' +id, function (content) {
+            $('#pricelist_temp').empty().append(content);
+        }).done(function () {
+        }).fail(function (data) {
+            bbox.modal("hide");
+            Client.message.error({'data': data});
+        });
+    });
+}
+
+function product_price_edit(id){
+   
 }
 
 /**

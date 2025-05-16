@@ -19,7 +19,7 @@
 
         <div class="form-group">
             <label for="description">Description*</label>
-            <input type="text" class="form-control" id="description" name="description"   required>
+            <textarea name="description" id="description" rows="3" cols="80"></textarea>
         </div>
 
         <div class="form-group">
@@ -46,7 +46,17 @@
                 <tbody>
                     <?php foreach ($proforma_quotation_detail as $detail) { ?>
                     <tr>
-                        <td><input type="checkbox" name="selected_items[]" value="<?php echo $detail->id; ?>" class="item-checkbox"></td>
+                        <td>
+                            <input 
+                                type="checkbox" 
+                                name="selected_items[]" 
+                                value="<?php echo $detail->id; ?>" 
+                                class="item-checkbox"
+                                data-fob-quotation="<?php echo $detail->fob_quotation; ?>"
+                                data-fob-product-price="<?php echo $detail->fob_product_price; ?>"
+                                data-fob-costing="<?php echo $detail->fob_costing; ?>"
+                            >
+                        </td>
                         <td><?php echo $detail->ebako_code; ?></td>
                         <td><?php echo $detail->customer_code; ?></td>
                         <td>
@@ -95,10 +105,10 @@ function do_move_to_sales() {
         return false;
     }
 
-    if (!$('#description').val()) {
-        bootbox.alert('Please enter Description.');
-        return false;
-    }
+    // if (!$('#description').val()) {
+    //     bootbox.alert('Please enter Description.');
+    //     return false;
+    // }
 
     // Kumpulkan data
     const formData = {
@@ -110,16 +120,25 @@ function do_move_to_sales() {
     };
 
     // Ambil detail item yang dipilih
-    $('input[name="selected_items[]"]:checked').each(function () {
-        const itemId = $(this).val();
-        const fobSelection = $(`select[name="fob_selection_${itemId}"]`).val();
-        const quantity = $(`input[name="quantity_${itemId}"]`).val();
+   $('input[name="selected_items[]"]:checked').each(function () {
+    const itemId = $(this).val();
+    const fobSelection = $(`select[name="fob_selection_${itemId}"]`).val();
+    const quantity = $(`input[name="quantity_${itemId}"]`).val();
+
+    const fobQuotation = $(this).data('fob-quotation');
+    const fobProductPrice = $(this).data('fob-product-price');
+    const fobCosting = $(this).data('fob-costing');
+
         formData.items.push({
             detail_id: itemId,
             fob_selection: fobSelection,
-            quantity: quantity
-            });
+            quantity: quantity,
+            last_quotation_fob_price: fobQuotation,
+            product_price: fobProductPrice,
+            last_costing_price: fobCosting
         });
+    });
+
 
     // Kirim data ke server
     $.ajax({

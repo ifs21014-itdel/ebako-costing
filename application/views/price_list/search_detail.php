@@ -11,13 +11,14 @@
                 <div align="left" class="form-inline" style="padding-top: 2px; margin-bottom: 15px;">
                     <div class="col-sm-8">
                         <input type="hidden" id="current_price_list_id" value="<?php echo isset($price_list_id) ? $price_list_id : 0; ?>">
-                        <input type="hidden" id="pricelistid" value="0" /> <span class="labelelement">Find :</span> 
-                        <input class="form-control" type="text" name="model_name_s" placeholder="Model Name" id="model_name_s" size="10" onkeypress="if (event.keyCode == 13) {
+                        <!-- <input type="hidden" id="pricelistid" value="0" /> <span class="labelelement">Find :</span>  -->
+                        <!-- <input class="form-control" type="text" name="model_name_s" placeholder="Model Name" id="model_name_s" size="10" onkeypress="if (event.keyCode == 13) {
                                     pricelist_search_detail(document.getElementById('current_price_list_id').value,0);
-                                }" /> 
-                        <button class="btn btn-default" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,0)">Search</button>
+                                }" />  -->
+                        <!-- <button class="btn btn-default" onclick="pricelist_search_detail(document.getElementById('current_price_list_id').value,0)">Search</button> -->
                     </div>
                     <div class="col-sm-4 text-right">
+                        <input type="hidden" id="current_price_list_id" value="<?php echo isset($price_list_id) ? $price_list_id : 0; ?>">
                         <button class="btn btn-primary" id="toggle_column_btn">
                             <i class="fa fa-columns"></i> Select Column
                         </button>
@@ -279,15 +280,20 @@
             <td>
                 <div class="drop">
                     <?php
-                    if (in_array('edit', $accessmenu)) {
-                        echo '<a href="javascript:price_list_edit(' . $result->id .
-                        ');"><button class="btn btn-sm btn-success"> <i class="fa fa-edit fa-sm"></i> Edit </button></a>';
-                    }
                     
-                    if (in_array('delete', $accessmenu)) {
+                        if($result->approval_price === null){
+                            echo '<button class="btn btn-sm btn-success" onclick="openUpdatePriceModal(' 
+                            . $result->id . ', ' 
+                            . $result->quantity . ', ' 
+                            . $result->target_price . ','
+                            .$result->price_list_id.')"> 
+                            <i class="fa fa-edit fa-sm"></i> Edit 
+                        </button>';
+
                         echo "&nbsp;&nbsp;&nbsp;";
                         echo '<a href="javascript:price_list_delete(' . $result->id . ');"><button class="btn btn-sm btn-delete btn-danger"> <i class="fa fa-trash fa-sm"></i> Delete</button></a>';
-                    }
+                    
+                        }
                     ?>                                    
                 </div>
             </td>
@@ -339,6 +345,40 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="submitApproval">Save Approval</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk update target price dan quantity -->
+<div class="modal fade" id="updatePriceModal" tabindex="-1" role="dialog" aria-labelledby="updatePriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="updatePriceModalLabel">Update Price & Quantity</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updatePriceForm">
+                    <input type="hidden" id="update_pricelist_id" name="update_pricelist_id">
+                    
+                    <div class="form-group">
+                        <label for="update_quantity">Quantity <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="update_quantity" name="update_quantity" min="1" required>
+                        <input type="hidden" class="form-control" id="id_parent" name="id_parent" min="1"  required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="update_target_price">Target Price <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" id="update_target_price" name="update_target_price" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitUpdatePrice">Save Changes</button>
             </div>
         </div>
     </div>
@@ -610,15 +650,72 @@
             success: function(data) {
                 if (data === 'success') {
                     $('#approvalModal').modal('hide');
-                    alert("Approval berhasil disimpan");
+                    alert("Approval successfully saved");
                     pricelist_search(<?php echo isset($offset) ? $offset : 0; ?>); // Tambahkan pengecekan isset
                 } else {
-                    alert("Gagal menyimpan approval");
+                    alert("Failed to save approval");
                 }
             },
             error: function() {
-                alert("Terjadi kesalahan pada server");
+                alert("An error occurred on the server");
             }
         });
+    });
+</script>
+
+<script type="text/javascript">
+    // Fungsi untuk membuka modal update price dan quantity
+    function openUpdatePriceModal(id, quantity, targetPrice,id_parent) {
+        // Set ID price list
+        $('#update_pricelist_id').val(id);
+        
+        // Set nilai quantity dan target price
+        $('#update_quantity').val(quantity);
+        $('#id_parent').val(id_parent);
+        $('#update_target_price').val(targetPrice);
+        
+        // Buka modal
+        $('#updatePriceModal').modal('show');
+    }
+    
+    // Event handler untuk tombol submit update
+    $('#submitUpdatePrice').click(function() {
+        // Validasi form
+        var form = $('#updatePriceForm')[0];
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        var id = $('#update_pricelist_id').val();
+        var quantity = $('#update_quantity').val();
+        var targetPrice = $('#update_target_price').val();
+        
+        // Tampilkan konfirmasi
+        if (confirm("Are you sure you want to change the quantity to " + quantity + " and the target price to " + targetPrice + "?")) {
+            // Kirim data ke server
+            $.ajax({
+                url: base_url + "index.php/price_list/update_price_quantity/" + id,
+                type: "POST",
+                data: {
+                    quantity: quantity,
+                    target_price: targetPrice
+                },
+                success: function(data) {
+                    if (data === 'success') {
+                        $('#updatePriceModal').modal('hide');
+                        alert("Data updated successfully");
+                        var id = $('#id_parent').val();
+                        pricelist_search(0);
+                        // pricelist_search_detail(id,0); // Refresh tampilan
+                    } else {
+                        alert("Failed to update data");
+}
+                },
+                error: function() {
+                    alert("An error occurred on the server");
+                }
+            });
+        }
     });
 </script>

@@ -309,13 +309,43 @@ class Sales_quotes extends CI_Controller {
         }
     }
 
-    function viewdetail($id) {
+    public function viewdetail($id) {
         $data['accessmenu'] = explode('|', $this->model_user->getAction($this->session->userdata('id'), "model"));
         $this->load->model('model_bom');
         $data['id'] = $id;
         $data['sq'] = $this->model_sales_quotes->selectById($id);
         $data['sqdetail'] = $this->model_sales_quotes->selectsqdetailbyid($id);
+        
+        // Add related models for dropdown based on the same query structure
+        $data['models'] = $this->model_sales_quotes->getRelatedModels($id);
+        error_log('Hasil getRelatedModels: ' . print_r($data['models'], true));
+        
         $this->load->view('sales_quotes/view_detail', $data);
+    }
+    public function update_parent_model() {
+        // Check if this is AJAX request
+        // if (!$this->input->is_ajax_request()) {
+        //     echo json_encode(array('success' => false, 'message' => 'No direct script access allowed'));
+        //     return;
+        // }
+        
+        // Get post data
+        $sales_quotes_id = $this->input->post('sales_quotes_id');
+        $model_id = $this->input->post('model_id');
+        // Validate input
+        if (!$sales_quotes_id || !$model_id) {
+            echo json_encode(array('success' => false, 'message' => 'Data tidak lengkap'));
+            return;
+        }
+        
+        // Update parent_sales_quotes_id in the sales_quotes table
+        $result = $this->model_sales_quotes->update_parent_sales($sales_quotes_id, $model_id);
+        
+        if ($result) {
+            echo json_encode(array('success' => true));
+        } else {
+            echo json_encode(array('success' => false, 'message' => 'Gagal memperbarui data'));
+        }
     }
 
     function viewitem($id) {
@@ -603,7 +633,7 @@ class Sales_quotes extends CI_Controller {
  * Update approval price dan approval date untuk sales_quotes
  */
     public function update_approval() {
-        // Periksa aksesibilidad
+        // Periksa aksesibilitas
         $accessmenu = explode('|', $this->model_user->getAction($this->session->userdata('id'), "price_list"));
         if (!in_array('edit', $accessmenu)) {
             echo 'unauthorized';
@@ -611,23 +641,90 @@ class Sales_quotes extends CI_Controller {
         }
 
         $id = $this->input->post('id');
+        $approval_type = $this->input->post('approval_type');
         $approval_price = $this->input->post('approval_price');
-
-        $data = array(
-            'approved_date' => $this->input->post('approval_date'),
-            'approve_price' => $approval_price,
-            'status' => "Approved",
-        );
+        $approval_date = $this->input->post('approval_date');
 
         try {
-            // Update status approval pada sales_quotes
+            // Ambil semua detail sales quotation
+            $details = $this->db->select('id, fob_price, ratevalue, last_costing_price, last_quotation_fob_price, product_price')
+                ->from('sales_quotes_detail')
+                ->where('sales_quotes_id', $id)
+                ->get()
+                ->result();
+            
+            // Jika tidak ada detail, kembalikan error
+            if (empty($details)) {
+                echo 'no_details';
+                return;
+            }
+            
+            // Hitung total harga untuk approve_price di sales_quotes
+            $total_approve_price = 0;
+            $count_items = count($details);
+            
+            // Update setiap detail berdasarkan tipe approval
+            foreach ($details as $detail) {
+                if ($approval_type === 'fob_price') {
+                    // Tidak mengubah nilai fob_price (menggunakan nilai yang sudah ada)
+                    $total_approve_price += $detail->fob_price;
+                } else if ($approval_type === 'last_costing_price') {
+                    // Update fob_price dengan nilai ratevalue, HANYA jika ratevalue tidak sama dengan 0
+                    if ($detail->last_costing_price != 0) {
+                        $this->db->set('fob_price', $detail->last_costing_price);
+                        $this->db->where('id', $detail->id);
+                        $this->db->update('sales_quotes_detail');
+                    }
+                    
+                    // Untuk perhitungan total, gunakan ratevalue jika tidak 0, atau gunakan fob_price yang sudah ada
+                    $price_to_add = ($detail->last_costing_price != 0) ? $detail->last_costing_price : $detail->fob_price;
+                    $total_approve_price += $price_to_add;
+                }else if ($approval_type === 'last_quotation_fob_price') {
+                    error_log("spotigy");
+                    // Update fob_price dengan nilai ratevalue, HANYA jika ratevalue tidak sama dengan 0
+                    if ($detail->last_quotation_fob_price != 0) {
+                        $this->db->set('fob_price', $detail->last_quotation_fob_price);
+                        $this->db->where('id', $detail->id);
+                        $this->db->update('sales_quotes_detail');
+                    }
+                    
+                    // Untuk perhitungan total, gunakan ratevalue jika tidak 0, atau gunakan fob_price yang sudah ada
+                    $price_to_add = ($detail->last_quotation_fob_price != 0) ? $detail->last_quotation_fob_price : $detail->fob_price;
+                    $total_approve_price += $price_to_add;
+                }else if ($approval_type === 'product_price') {
+                    // Update fob_price dengan nilai ratevalue, HANYA jika ratevalue tidak sama dengan 0
+                    if ($detail->product_price != 0) {
+                        $this->db->set('fob_price', $detail->product_price);
+                        $this->db->where('id', $detail->id);
+                        $this->db->update('sales_quotes_detail');
+                    }
+                    
+                    // Untuk perhitungan total, gunakan ratevalue jika tidak 0, atau gunakan fob_price yang sudah ada
+                    $price_to_add = ($detail->product_price != 0) ? $detail->product_price : $detail->fob_price;
+                    $total_approve_price += $price_to_add;
+                }
+                else {
+                    // Jika tipe approval tidak dikenali, gunakan nilai input manual
+                    $this->db->set('fob_price', $approval_price);
+                    $this->db->where('id', $detail->id);
+                    $this->db->update('sales_quotes_detail');
+                    
+                    $total_approve_price += $approval_price;
+                }
+            }
+            
+            // Hitung rata-rata untuk approve_price jika tidak ada nilai manual
+            $avg_approve_price = $count_items > 0 ? $total_approve_price / $count_items : 0;
+            
+            // Update data pada sales_quotes
+            $quotes_data = array(
+                'approved_date' => $approval_date,
+                'approve_price' => $approval_price ? $approval_price : $avg_approve_price,
+                'status' => "Approved",
+            );
+            
             $this->db->where('id', $id);
-            $this->db->update('sales_quotes', $data);
-
-            // Update nilai fob_price pada sales_quotes_detail menjadi approval_price
-            $this->db->set('fob_price', $approval_price);
-            $this->db->where('sales_quotes_id', $id); // Pastikan hanya mengupdate detail yang sesuai dengan sales_quotes_id
-            $this->db->update('sales_quotes_detail');
+            $this->db->update('sales_quotes', $quotes_data);
 
             echo 'success';
         } catch (Exception $e) {
@@ -635,8 +732,6 @@ class Sales_quotes extends CI_Controller {
             log_message('error', 'Error updating sales quotes approval: ' . $e->getMessage());
         }
     }
-
-
 
 
 }

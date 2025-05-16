@@ -127,17 +127,16 @@
                     }
 
                     // Tombol print tetap aktif
-                    echo '<a href="javascript:print_quotation(' . $result->id . ');">
-                            <button class="btn btn-sm btn-success">
-                                <i class="fa fa-print fa-sm"></i> Quo.
-                            </button>
-                        </a>';
+                   echo '<button class="btn btn-sm btn-success" id="quotation_' . $result->id . '" onclick="print_quotation(' . $result->id . ', this)">
+                            <i class="fa fa-print fa-sm"></i> Quo.
+                        </button>';
+
                     echo '&nbsp;&nbsp;&nbsp;';
-                    echo '<a href="javascript:print_quotation(' . $result->id . ');">
-                            <button class="btn btn-sm btn-success">
-                                <i class="fa fa-print fa-sm"></i> Project
-                            </button>
-                        </a>';
+
+                    echo '<button class="btn btn-sm btn-success" id="project_' . $result->id . '" onclick="print_quotation(' . $result->id . ', this)">
+                            <i class="fa fa-print fa-sm"></i> Project
+                        </button>';
+
 
                     if (!$isApproved) {
                         echo '&nbsp;&nbsp;&nbsp;';
@@ -158,7 +157,8 @@
     ?>
 </table>
 
-<!-- Modal untuk Approval Price -->
+
+<!-- Modal untuk Approval Price dengan Pilihan FOB Price atau Rate Value -->
 <div class="modal fade" id="approvalModal" tabindex="-1" role="dialog" aria-labelledby="approvalModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -178,15 +178,26 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="select_price">Select Price <span class="required">*</span></label>
-                        <select class="form-control" id="select_price" name="select_price" required>
-                            <option value="">-- Select Price --</option>
+                        <label for="approval_type">Approval Type <span class="required">*</span></label>
+                        <select class="form-control" id="approval_type" name="approval_type" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="fob_price">Use Existing FOB Price</option>
+                            <option value="last_quotation_fob_price">Use Last Quotation FOB Price  Value as FOB Price</option>
+                            <option value="last_costing_price">Use Last Costing Price  Value as FOB Price</option>
+                            <option value="product_price">Use Product Price  Value as FOB Price</option>
                         </select>
+                        <!-- <small class="form-text text-muted">
+                            • "Use Existing FOB Price" will approve using the current FOB prices.<br>
+                            • "Use Rate Value as FOB Price" will update each FOB price with its corresponding rate value.
+                        </small> -->
                     </div>
                     
                     <div class="form-group">
-                        <label for="approval_price">Approval Price <span class="required">*</span></label>
-                        <input type="number" step="0.01" class="form-control" id="approval_price" name="approval_price" required>
+                        <label for="approval_price">Manual Approval Price (Optional)</label>
+                        <input type="number" step="0.01" class="form-control" id="approval_price" name="approval_price">
+                        <small class="form-text text-muted">
+                            Leave blank to use the average of the prices. This will only affect the approval price in the sales quotes header.
+                        </small>
                     </div>
                     
                     <div class="modal-footer">
@@ -198,7 +209,6 @@
         </div>
     </div>
 </div>
-
 <script type="text/javascript">
 
 function showApprovalModal(id) {
@@ -206,44 +216,17 @@ function showApprovalModal(id) {
     $('#approval_date').val('<?php echo date('Y-m-d'); ?>');
     
     // Reset form
-    $('#select_price').empty().append('<option value="">-- Select Price --</option>');
+    $('#approval_type').val('');
     $('#approval_price').val('');
-    
-    // Ambil data fob price dari quotation_detail berdasarkan sales_quotes_id
-    $.ajax({
-        url: '<?php echo base_url('sales_quotes/get_fob_prices'); ?>',
-        method: 'POST',
-        data: {sales_quotes_id: id},
-        dataType: 'json',
-        success: function(data) {
-            if (data.status === 'success') {
-                // Isi dropdown dengan data fob_quotation
-                $.each(data.prices, function(index, item) {
-                    $('#select_price').append('<option value="' + item.fob_quotation + '">' + 
-                        item.ebako_code + ' - ' + item.customer_code + ' ($' + item.fob_quotation + ')</option>');
-                });
-            } else {
-                alert('Failed to get price data');
-            }
-        },
-        error: function() {
-            alert('Error fetching price data from server');
-        }
-    });
     
     $('#approvalModal').modal('show');
 }
 
 $(document).ready(function() {
-    // Event handler untuk dropdown select_price
-    $(document).on('change', '#select_price', function() {
-        $('#approval_price').val($(this).val());
-    });
-    
     // Event handler untuk tombol saveApproval
     $(document).on('click', '#saveApproval', function() {
         // Validasi form
-        if (!$('#approval_date').val() || !$('#approval_price').val()) {
+        if (!$('#approval_date').val() || !$('#approval_type').val()) {
             alert('Please fill all required fields');
             return false;
         }
@@ -255,18 +238,22 @@ $(document).ready(function() {
             data: {
                 id: $('#sales_quotes_id').val(),
                 approval_date: $('#approval_date').val(),
+                approval_type: $('#approval_type').val(),
                 approval_price: $('#approval_price').val()
             },
             success: function(response) {
                 if (response === 'success') {
                     alert('Approval data saved successfully');
+                    $('#approvalModal').modal('hide');
                     $('.modal-backdrop').remove();
-                        $('body').removeClass('modal-open');
-                        $('body').css('padding-right', ''); // Reset padding body
+                    $('body').removeClass('modal-open');
+                    $('body').css('padding-right', ''); // Reset padding body
 
                     sales_quotes_search(0);
                 } else if (response === 'unauthorized') {
                     alert('You are not authorized to perform this action');
+                } else if (response === 'no_details') {
+                    alert('No sales quotes details found');
                 } else {
                     alert('Failed to save approval data');
                 }
@@ -275,23 +262,6 @@ $(document).ready(function() {
                 alert('Error sending data to server');
             }
         });
-    });
-    
-    // Inisialisasi tabel jika belum
-    if ($.fn.DataTable.isDataTable('#table_sales_quotes')) {
-        $('#table_sales_quotes').DataTable().destroy();
-    }
-    
-    var table = $('#table_sales_quotes').DataTable({
-        scrollY: "300px",
-        scrollX: true,
-        scrollCollapse: true,
-        paging: false,
-        ordering: false,
-        info: false,
-        searching: false,
-        autoWidth: true,
-        select: true,
     });
 });
 </script>

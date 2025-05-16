@@ -577,135 +577,170 @@ class proforma_quotation extends CI_Controller {
     /**
      * Proses pemindahan data ke sales quotes
      */
-    public function process_move_to_sales() {
-        error_log("meja");
-    
-        // Ambil input JSON
-        $json_data = json_decode(file_get_contents('php://input'), true);
-    
-        // Cek apakah json_decode berhasil
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("JSON decode error: " . json_last_error_msg());
-            echo json_encode(['success' => false, 'msg' => 'Invalid input data']);
-            return;
-        }
-    
-        // Log data JSON yang diterima
-        error_log('DATA JSON YANG DITERIMA: ' . print_r($json_data, true));
-    
-        if (!$json_data) {
-            echo json_encode(['success' => false, 'msg' => 'Invalid input data']);
-            return;
-        }
-        
-        // Load model sales quotes dan proformaquotation
-        $this->load->model('model_salesquotes');
-        $this->load->model('model_proformaquotation'); // Pastikan model ini di-load
-        $quotation_number  = $this->model_costing->createquonumber(0);
-        // Mulai transaksi database
-        $this->db->trans_begin();
-        
-        try {
-            // 1. Buat sales quotes baru
-            $sales_quotes_data = [
-                'customer_id' => $json_data['customer_id'],
-                'quotation_number' =>$quotation_number,
-                'quo_date' => $json_data['quo_date'],
-                'description' => $json_data['description'],
-                'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $this->session->userdata('id')
-            ];
-            
-            error_log(print_r($sales_quotes_data, true));
+   public function process_move_to_sales() {
+    error_log("meja");
 
-            // Insert sales quotes
-            $result = $this->model_salesquotes->insert($sales_quotes_data);
-            
-            if (is_bool($result) && $result === true) {
-                $this->db->order_by('id', 'DESC');
-                $this->db->limit(1);
-                $query = $this->db->get('sales_quotes');
-                if ($query->num_rows() > 0) {
-                    $sales_quotes_id = $query->row()->id;
-                } else {
-                    throw new Exception('Failed to retrieve sales quotation ID');
-                }
-            } else if (is_numeric($result)) {
-                $sales_quotes_id = $result;
+    // Ambil input JSON
+    $json_data = json_decode(file_get_contents('php://input'), true);
+
+    // Cek apakah json_decode berhasil
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("JSON decode error: " . json_last_error_msg());
+        echo json_encode(['success' => false, 'msg' => 'Invalid input data']);
+        return;
+    }
+
+    // Log data JSON yang diterima
+    error_log('DATA JSON YANG DITERIMA: ' . print_r($json_data, true));
+
+    if (!$json_data) {
+        echo json_encode(['success' => false, 'msg' => 'Invalid input data']);
+        return;
+    }
+    
+    // Load model sales quotes dan proformaquotation
+    $this->load->model('model_salesquotes');
+    $this->load->model('model_proformaquotation'); // Pastikan model ini di-load
+    
+    // Periksa apakah proforma quotation sudah pernah dimigrasi
+    $proforma_quotation_id = $json_data['proforma_quotation_id'];
+    
+    // Cek apakah sudah ada sales quotation yang menggunakan proforma_quotation_id ini
+    $existing_sales_quote = $this->model_salesquotes->getByProformaQuotationId($proforma_quotation_id);
+    if ($existing_sales_quote) {
+        echo json_encode(['success' => false, 'msg' => 'This Proforma Quotation has been migrated to Sales Quotation with the number: ' . $existing_sales_quote->quotation_number]);
+        return;
+    }
+    
+    $quotation_number = $this->model_costing->createquonumber(0);
+    
+    // Mulai transaksi database
+    $this->db->trans_begin();
+    
+    try {
+        // 1. Buat sales quotes baru
+        $sales_quotes_data = [
+            'customer_id' => $json_data['customer_id'],
+            'quotation_number' => $quotation_number,
+            'quo_date' => $json_data['quo_date'],
+            'description' => $json_data['description'],
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $this->session->userdata('id'),
+            'proforma_quotation_id' => $proforma_quotation_id // Tambahkan proforma_quotation_id
+        ];
+        
+        error_log(print_r($sales_quotes_data, true));
+
+        // Insert sales quotes
+        $result = $this->model_salesquotes->insert($sales_quotes_data);
+        
+        if (is_bool($result) && $result === true) {
+            $this->db->order_by('id', 'DESC');
+            $this->db->limit(1);
+            $query = $this->db->get('sales_quotes');
+            if ($query->num_rows() > 0) {
+                $sales_quotes_id = $query->row()->id;
             } else {
-                throw new Exception('Failed to create sales quotation');
+                throw new Exception('Failed to retrieve sales quotation ID');
             }
-    
-            // 2. Proses item detail
-            foreach ($json_data['items'] as $item) {
-                $detail = $this->model_proformaquotation->selectDetailId($item['detail_id']);
-                
-                if (!$detail) {
-                    error_log("Detail tidak ditemukan untuk ID: " . $item['detail_id']);
-                    continue;
-                }
-    
-                error_log("Detail untuk ID " . $item['detail_id'] . ": " . print_r($detail, true));
-    
-                // Menentukan fob_price berdasarkan pilihan
-                $fob_price = 0;
-                switch ($item['fob_selection']) {
-                    case 'fob_quotation':
-                        $fob_price = isset($detail->fob_quotation) ? $detail->fob_quotation : 0;
-                        break;
-                    case 'fob_product_price':
-                        $fob_price = isset($detail->fob_product_price) ? $detail->fob_product_price : 0;
-                        break;
-                    case 'fob_costing':
-                        $fob_price = isset($detail->fob_costing) ? $detail->fob_costing : 0;
-                        break;
-                }
-    
-                // Cek model_id dan gunakan default jika tidak ada
-                $costingid = isset($detail->model_id) ? $detail->model_id : null;
-                
-                // Jika costingid masih null, gunakan default id 0
-                if ($costingid === null) {
-                    error_log("costingid tidak ditemukan untuk detail ID: " . $item['detail_id'] . ", menggunakan default id = 0");
-                    $costingid = 0; // Menggunakan default id = 0 sesuai permintaan
-                }
-    
+        } else if (is_numeric($result)) {
+            $sales_quotes_id = $result;
+        } else {
+            throw new Exception('Failed to create sales quotation');
+        }
+
+        // 2. Proses item detail
+        foreach ($json_data['items'] as $item) {
+            $detail = $this->model_proformaquotation->selectDetailId($item['detail_id']);
+            
+            if (!$detail) {
+                error_log("Detail tidak ditemukan untuk ID: " . $item['detail_id']);
+                continue;
+            }
+
+            error_log("Detail untuk ID " . $item['detail_id'] . ": " . print_r($detail, true));
+
+            // Menentukan fob_price berdasarkan pilihan
+            $fob_price = 0;
+            switch ($item['fob_selection']) {
+                case 'fob_quotation':
+                    $fob_price = isset($detail->fob_quotation) ? $detail->fob_quotation : 0;
+                    break;
+                case 'fob_product_price':
+                    $fob_price = isset($detail->fob_product_price) ? $detail->fob_product_price : 0;
+                    break;
+                case 'fob_costing':
+                    $fob_price = isset($detail->fob_costing) ? $detail->fob_costing : 0;
+                    break;
+            }
+
+            // Mendapatkan costing berdasarkan ebako_code
+            $costing = null;
+            if (isset($detail->ebako_code) && !empty($detail->ebako_code)) {
+                $costing = $this->model_salesquotes->getCostingByEbakoCode($detail->ebako_code);
+            }
+
+            // Jika costing ditemukan, gunakan data dari costing
+            // Jika tidak, gunakan costingid = 0
+            $costingid = ($costing) ? $costing->id : 0;
+            
+            // Ambil nilai dari item
+            $last_quotation_fob_price = isset($item['last_quotation_fob_price']) ? $item['last_quotation_fob_price'] : 0;
+            $product_price = isset($item['product_price']) ? $item['product_price'] : 0;
+            $last_costing_price = isset($item['last_costing_price']) ? $item['last_costing_price'] : 0;
+            
+            // Siapkan data sales quotes detail dengan informasi dari costing jika tersedia
+            if ($costing) {
+                $sales_quotes_detail_data = $this->model_salesquotes->prepareSalesQuotesDetailData(
+                    $sales_quotes_id,
+                    $costing,
+                    $fob_price,
+                    isset($detail->remark) ? $detail->remark : '',
+                    isset($item['quantity']) ? (int)$item['quantity'] : 1,
+                    $last_quotation_fob_price,
+                    $product_price,
+                    $last_costing_price
+                );
+            } else {
+                // Jika tidak ada costing, gunakan data minimal
                 $sales_quotes_detail_data = [
                     'sales_quotes_id' => $sales_quotes_id,
-                    'costingid' => $costingid,
+                    'costingid' => 0, 
                     'fob_price' => $fob_price,
                     'notes' => isset($detail->remark) ? $detail->remark : '',
-                    'quantity' => isset($item['quantity']) ? (int)$item['quantity'] : 1
+                    'quantity' => isset($item['quantity']) ? (int)$item['quantity'] : 1,
+                    'last_quotation_fob_price' => $last_quotation_fob_price,
+                    'product_price' => $product_price,
+                    'last_costing_price' => $last_costing_price
                 ];
-                
-                error_log("Data untuk insert sales_quotes_detail: " . print_r($sales_quotes_detail_data, true));
-    
-                $detail_result = $this->model_salesquotes->insertDetail($sales_quotes_detail_data);
-    
-                if ($detail_result === false) {
-                    // Cek apakah menggunakan PostgreSQL
-                    if (property_exists($this->db, 'conn_id') && function_exists('pg_last_error')) {
-                        $db_error = pg_last_error($this->db->conn_id);
-                        error_log("DB Error (PostgreSQL): " . $db_error);
-                        throw new Exception('Gagal membuat detail sales quotation untuk item ' . $item['detail_id'] . '. Error: ' . $db_error);
-                    } else {
-                        // Untuk database lain (MySQL, dll)
-                        error_log("DB Error: " . $this->db->error());
-                        throw new Exception('Gagal membuat detail sales quotation untuk item ' . $item['detail_id']);
-                    }
+            }
+            
+            error_log("Data untuk insert sales_quotes_detail: " . print_r($sales_quotes_detail_data, true));
+
+            $detail_result = $this->model_salesquotes->insertDetail($sales_quotes_detail_data);
+
+            if ($detail_result === false) {
+                if (property_exists($this->db, 'conn_id') && function_exists('pg_last_error')) {
+                    $db_error = pg_last_error($this->db->conn_id);
+                    error_log("DB Error (PostgreSQL): " . $db_error);
+                    throw new Exception('Gagal membuat detail sales quotation untuk item ' . $item['detail_id'] . '. Error: ' . $db_error);
+                } else {
+                    error_log("DB Error: " . $this->db->error());
+                    throw new Exception('Gagal membuat detail sales quotation untuk item ' . $item['detail_id']);
                 }
             }
-    
-            $this->db->trans_commit();
-    
-            echo json_encode(['success' => true, 'sales_quotes_id' => $sales_quotes_id]);
-    
-        } catch (Exception $e) {
-            $this->db->trans_rollback();
-            error_log("Exception in process_move_to_sales: " . $e->getMessage());
-            echo json_encode(['success' => false, 'msg' => $e->getMessage()]);
         }
-    }   
+
+        $this->db->trans_commit();
+
+        echo json_encode(['success' => true, 'sales_quotes_id' => $sales_quotes_id]);
+
+    } catch (Exception $e) {
+        $this->db->trans_rollback();
+        error_log("Exception in process_move_to_sales: " . $e->getMessage());
+        echo json_encode(['success' => false, 'msg' => $e->getMessage()]);
+    }
+}
 
 
 

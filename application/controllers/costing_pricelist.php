@@ -447,13 +447,33 @@ class costing_pricelist extends CI_Controller {
         }
         echo $html;
     }
-
-    function print_quotation() {
+    public function print_quotation() {
         $quotation_id = $this->input->get('id');
-        error_log($quotation_id);
+        $print_type = $this->input->get('print_type'); // Ambil parameter print_type
+        
         $data['quotation'] = $this->model_costing->select_quotation_byid($quotation_id);
         $data['quo_item'] = $this->model_costing->select_allitem_by_quotationid($quotation_id);
-
+        $data['print_type'] = $print_type; // Teruskan ke view
+        
+        // Periksa apakah quotation memiliki parent_id
+        $has_parent = false;
+        if (!empty($data['quotation'][0]->parent_id)) {
+            $has_parent = true;
+        }
+        
+        // Tandai item pertama untuk keperluan tampilan (flagging the first item)
+        if (!empty($data['quo_item'])) {
+            $first_item = true;
+            foreach ($data['quo_item'] as &$item) {
+                $item->is_first_item = $first_item;
+                // Jika tidak memiliki parent, semua item akan ditampilkan lengkap
+                $item->show_full = !$has_parent || $item->sort_order === '0' || $first_item;
+                if ($first_item) {
+                    $first_item = false;
+                }
+            }
+        }
+        
         $html = $this->load->view('costing_pricelist/print_quotation', $data, TRUE);
         echo $html;
     }

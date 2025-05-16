@@ -22,6 +22,7 @@
     //   $insurance=$_REQUEST['insurance'];
 
     $insurance = $quotation[0]->insurance;
+    
     ?>
     <body style="margin-top: 10px">
         <div id="content">
@@ -154,8 +155,11 @@
                         <td>
                             <table celpadding="0" cellspacing="0" style="border:0px solid black;width:100%;font-size: 11px;font-family:Verdana,Georgia,Serif;" class="page">
                                 <caption>
-                                    <h2 onclick="show_hide_header()" style="cursor: pointer;">QUOTATION - No. 
-                                        <?php echo $quotation[0]->quotation_number; ?></h2></caption>
+                                    <h2 onclick="show_hide_header()" style="cursor: pointer;">
+                                        <?php echo isset($print_type) && $print_type === 'project' ? 'PROJECT' : 'QUOTATION'; ?> - No. 
+                                        <?php echo $quotation[0]->quotation_number; ?>
+                                    </h2>
+                                </caption>
                                 <thead>
                                     <tr style="background-color: #dfdfe1;page-break-inside:avoid; page-break-after:auto;">
                                         <th style="border:1px solid black;"><b>No.</b></th>
@@ -166,7 +170,10 @@
                                             <th style="border:1px solid black;">FOB Price Before</th>
                                         <?php endif; ?>
                                         <th style="border:1px solid #000;padding: 5px;max-width: 150px;width: 150px;word-wrap:break-word;" >Unit Price (USD, FOB Semarang)</th>
-                                        <th style="border:1px solid black;">Quantity</th>
+                                        <?php if (!isset($print_type) || $print_type == 'project'): ?>
+                                            <th style="border:1px solid black;">Quantity</th>
+                                             <th style="border:1px solid black;">Total (USD)</th>
+                                        <?php endif; ?>
                                         <th style="border:1px solid black;">Remarks</th>
 
                                     </tr>
@@ -186,20 +193,33 @@
                                         <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"><?php echo $no; ?></td>
 
                                         <td style="border:1px solid #000;padding: 5px;max-width: 390px;width: 390px;max-height: 150px;height: 150px;word-wrap:break-word;vertical-align: bottom;"> 
-                                    <center><img src=" <?php echo base_url() ?>/files/<?php echo @$result->filename; ?>" class="miniaction" 
-                                                 onclick="model_imageview('<?php echo @$result->filename; ?>')" 
-                                                 style="max-width: 30%;"></center>
-                                    <!--style="max-width: 150px;width: 150px;max-height: 150px;height: 150px;"></center>-->
-                                    <?php
-                                    echo "<font color=blue size=2><center>" . $result->custcode . "</center></font><font size=2><br> " . $result->code . "<br> " . $result->model_desc;
-                                    echo '<br>W' . number_format(($result->dw / 25.4), 2) . '" x ';
-                                    echo 'D' . number_format(($result->dd / 25.4), 2) . '" x ';
-                                    echo 'H' . number_format(($result->dht / 25.4), 2) . '"';
-                                    echo '<br>W' . number_format(($result->dw) / 10, 2) . ' x ';
-                                    echo 'D' . number_format(($result->dd) / 10, 2) . ' x ';
-                                    echo 'H' . number_format(($result->dht) / 10, 2) . ' cm';
-                                    ?> 
-                            </td>
+                                    <?php 
+                                    // Kondisi untuk menampilkan konten lengkap:
+                                    // 1. Jika parent_model_id adalah NULL (quotation tidak memiliki parent), tampilkan semua lengkap
+                                    // 2. Jika item ini memiliki sort_order=0 (modelnya cocok dengan parent_id)
+                                    // 3. Jika item ini adalah item pertama (untuk jaga-jaga)
+                                    if ($result->parent_model_id === NULL || $result->sort_order === '0' || $result->is_first_item === true): 
+                                    ?>
+                                        <center>
+                                            <img src="<?php echo base_url() ?>/files/<?php echo @$result->filename; ?>" 
+                                                class="miniaction" 
+                                                onclick="model_imageview('<?php echo @$result->filename; ?>')" 
+                                                style="max-width: 30%;">
+                                        </center>
+                                        <?php
+                                        echo "<font color=blue size=2><center>" . $result->custcode . "</center></font><font size=2><br> " . $result->code . "<br> " . $result->model_desc;
+                                        echo '<br>W' . number_format(($result->dw / 25.4), 2) . '" x ';
+                                        echo 'D' . number_format(($result->dd / 25.4), 2) . '" x ';
+                                        echo 'H' . number_format(($result->dht / 25.4), 2) . '"';
+                                        echo '<br>W' . number_format(($result->dw) / 10, 2) . ' x ';
+                                        echo 'D' . number_format(($result->dd) / 10, 2) . ' x ';
+                                        echo 'H' . number_format(($result->dht) / 10, 2) . ' cm';
+                                        ?>
+                                    <?php else: ?>
+                                        <!-- Untuk item lainnya, hanya tampilkan kode model saja -->
+                                        <!-- <font size=2><?php echo $result->code; ?></font> -->
+                                    <?php endif; ?>
+                                </td>
                             <td style="border:1px solid #000;padding: 5px;width: 40px;max-width: 40px;" align="center" valign="middle"> 
                                 <?php
                                 if (count($before) > 0) {
@@ -227,12 +247,14 @@
                                 echo number_format(round($result->fob_price)) . ".00";
                                 ?> 
                             </td>
-                            <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
-                                <?php
-                                // Tampilkan quantity dari data result
-                                echo $result->quantity;
-                                ?> 
-                            </td>
+                            <?php if (!isset($print_type) || $print_type == 'project'): ?>
+                                <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
+                                    <?php echo $result->quantity; ?> 
+                                </td>
+                                 <td style="border:1px solid #000;padding: 5px;" align="center" valign="middle"> 
+                                    <?php echo number_format(round($result->fob_price * $result->quantity)) . ".00"; ?> 
+                                </td>
+                            <?php endif; ?>
                             <td style="border:1px solid #000;padding: 5px;max-width: 450px;width: 450px;max-height: 230px;height: 230px;word-wrap:break-word;"  valign="middle"> 
                                 <table width="100%" celpadding="0" cellspacing="0" style="border-collapse: collapse;border:0px solid black;font-size: 11px;font-family:Verdana,Georgia,Serif;page-break-inside:auto;word-wrap:break-word;">
                                     <thead style="word-wrap:break-word;">

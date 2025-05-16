@@ -308,16 +308,21 @@
                                 </tr>
                               <!-- Perbaikan susunan tag tr dan th -->
 <!-- Perbaikan susunan tag tr dan th -->
-                                <tr>
-                                    <th colspan="16"> 
-                                        <b>Valid Until : </b>
-                                        <input type="date" name="valid_date" id="valid_date_id"/>
-                                    </th>
-                                    <th colspan="16">
-                                        <b>Description:</b> 
-                                        <input type="text" name="description" id="description_id"/> 
+                               <tr>
+                                    <th colspan="16" style="text-align: left;">
+                                        <label for="valid_date_id" style="display: inline-block; width: 120px;"><b>Valid Until :</b></label>
+                                        <input type="date" name="valid_date" id="valid_date_id" />
                                     </th>
                                 </tr>
+
+                                <tr>
+                                    <th colspan="16" style="text-align: left;">
+                                        <label for="description_id" style="display: inline-block; width: 120px;"><b>Description:</b></label>
+                                        <textarea name="description" id="description_id" rows="3" cols="80"></textarea>
+                                    </th>
+                                </tr>
+
+
                                
                                     <tr>
                                     <td colspan="17">

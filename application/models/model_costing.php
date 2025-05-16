@@ -1243,21 +1243,33 @@ class model_costing extends CI_Model {
         return $this->db->query($query)->result();
     }
 
-    function select_allitem_by_quotationid($quotation_id) {
-        $query = "select sqd.*, model.no code,
-                model.custcode,
-                model.finish_on_metal_hardware,
-                model.additionalnotes,
-                model.description model_desc,
-                model.filename,
-                cost.modelid 
-                from sales_quotes_detail sqd 
-                left join costing cost on sqd.costingid=cost.id
-                JOIN model on cost.modelid=model.id 
-                where sqd.sales_quotes_id=$quotation_id order by model.no asc ";
-        // echo $query."<br>";
-        return $this->db->query($query)->result();
-    }
+   function select_allitem_by_quotationid($quotation_id) {
+    // Ambil parent_id dari sales_quotes untuk quotation yang sedang dipilih
+    $parent_id_query = "SELECT parent_id FROM sales_quotes WHERE id = $quotation_id";
+    $parent_id_result = $this->db->query($parent_id_query)->row();
+    $parent_id = ($parent_id_result) ? $parent_id_result->parent_id : null;
+    
+    $query = "SELECT sqd.*, 
+            model.no code,
+            model.custcode,
+            model.finish_on_metal_hardware,
+            model.additionalnotes,
+            model.description model_desc,
+            model.filename,
+            cost.modelid,
+            " . ($parent_id ? "$parent_id AS parent_model_id," : "NULL AS parent_model_id,") . "
+            CASE 
+                WHEN " . ($parent_id ? "model.id = $parent_id" : "1=0") . " THEN 0
+                ELSE 1
+            END AS sort_order
+            FROM sales_quotes_detail sqd 
+            LEFT JOIN costing cost ON sqd.costingid = cost.id
+            JOIN model ON cost.modelid = model.id 
+            WHERE sqd.sales_quotes_id = $quotation_id 
+            ORDER BY sort_order, model.no ASC";
+            
+    return $this->db->query($query)->result();
+}
 
     function select_item_by_quotationid($parentid, $costingid) {
         // Gunakan prepared statement untuk mencegah SQL injection

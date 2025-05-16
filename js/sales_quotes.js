@@ -180,7 +180,7 @@ function sales_quotes_delete(sqid) {
         });
     }
 }
-function print_quotation(sales_quotesid) {
+function print_quotation(sales_quotesid, btn) {
     var wood = document.querySelector('#wood_id:checked') !== null;
     var veneer = document.querySelector('#veneer_id:checked') !== null;
     var upstype = document.querySelector('#upstype_id:checked') !== null;
@@ -192,26 +192,63 @@ function print_quotation(sales_quotesid) {
     var box_dim = document.querySelector('#box_dim_id:checked') !== null;
     var cube = document.querySelector('#cube_id:checked') !== null;
     var leather = document.querySelector('#leather_id:checked') !== null;
-   // alert(wood + ' ' + veneer);
+
+    var print_type = btn.id.includes('project') ? 'project' : 'quotation';
+    console.log(print_type);
+
     if (sales_quotesid != 0) {
-        //var url = "<?php echo base_url() ?>";
-        var full_url = url + "costing_pricelist/print_quotation?id="+sales_quotesid
-                + "&wood=" + wood
-                + "&veneer=" + veneer
-                + "&upstype=" + upstype
-                + "&ship_conf=" + ship_conf
-                + "&fabric=" + fabric
-                + "&leather=" + leather
-                + "&packing=" + packing
-                + "&qtypp=" + qtypp
-                + "&other=" + other
-                + "&box_dim=" + box_dim
-                + "&cube=" + cube
-                ;
-                //alert(full_url);
-            var win = window.open(full_url, '_blank');
-        //window.open(url + 'costing_pricelist/print_quotation/' + sales_quotesid, '_blank');
+        var full_url = url + "costing_pricelist/print_quotation?id=" + sales_quotesid
+            + "&wood=" + wood
+            + "&veneer=" + veneer
+            + "&upstype=" + upstype
+            + "&ship_conf=" + ship_conf
+            + "&fabric=" + fabric
+            + "&leather=" + leather
+            + "&packing=" + packing
+            + "&qtypp=" + qtypp
+            + "&other=" + other
+            + "&box_dim=" + box_dim
+            + "&cube=" + cube
+            + "&print_type=" + print_type;
+        var win = window.open(full_url, '_blank');
     } else {
         alert('Choose Model');
     }
+}
+
+function onSelectModel(id) {
+    // Get selected model ID from dropdown
+    var modelId = $("#modelDropdown").val();
+    
+    // Get current sales_quotes_id from URL or hidden field
+    var salesQuotesId = id;  // Assuming $id is passed from controller
+    
+    // Validate selection
+    if (!modelId) {
+        alert("Please select a model first!");
+        return;
+    }
+    
+    // Send AJAX request to update parent_id
+    $.ajax({
+        url: url + "sales_quotes/update_parent_model",
+        type: "POST",
+        data: {
+            sales_quotes_id: salesQuotesId,
+            model_id: modelId
+        },
+        dataType: "json",
+        success: function(response) {
+            if (response.success) {
+                // Reload the page or update the UI
+                alert("Model successfully selected!");
+                location.reload(); // Reload to reflect changes
+            } else {
+                alert("Gagal memperbarui data: " + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert("Terjadi kesalahan: " + error);
+        }
+    });
 }
