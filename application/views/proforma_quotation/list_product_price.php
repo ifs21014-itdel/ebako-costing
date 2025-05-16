@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <div align="left" style="padding: 7px 0;">
-        <span style="font-style: italic;"><b>*Notes: Select product price from the list</b></span>
+        <span style="font-style: italic;"><b>*Notes: Select product price from the listss</b></span>
         <br/><br/>
         <input type="hidden" id="temp" value="<?php echo $temp ?>" />
         <span class="labelelement">Ebako Code</span>
