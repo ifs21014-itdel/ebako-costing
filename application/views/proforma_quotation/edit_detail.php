@@ -20,7 +20,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>FOB :</label></td>  
+            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>Last Quotation FOB Price :</label></td>  
             <td>
                 <input type="hidden" id="quotation_detail_id" name="quotation_detail_id" value="<?php echo $detail->quotation_detail_id ?>" />
                 <input type="text" id="quotation_detail_fob" name="quotation_detail_fob" value="<?php echo $detail->fob_quotation ?>" 
@@ -29,7 +29,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>FOB Costing :</label></td>  
+            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>Current Costing FOB Price :</label></td>  
             <td>
                 <input type="text" id="fob_costing" name="fob_costing" value="<?php echo $detail->fob_costing ?>"
                     style="width: 305px;background-color: #fbfbfb;border: 1px solid #aeb5c5;" class="form-control-sm" required />

@@ -48,7 +48,7 @@
         
      <!-- Fragment dari form Anda -->
         <tr>
-            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>FOB :</label></td>  
+            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>Last Quotation FOB Price :</label></td>  
             <td>
                 <input type="hidden" id="costingid0" name="costingid" value="1" />
                 <input type="text" id="costingcode0" name="costingcode" value="" 

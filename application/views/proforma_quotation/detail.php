@@ -108,7 +108,7 @@
                         <th width="10%" align=center>Customer Code</th>
                         <th width="10%" align=center>FOB Quotation</th>
                         <th width="10%" align=center>FOB Product Price</th>
-                        <th width="10%" align=center>FOB Costing</th>
+                        <th width="10%" align=center>Current Costing FOB Price</th>
                         <th width="15%" align=center>Remark</th>
                         <th width="10%" align=center>Action</th> 
                     </tr>

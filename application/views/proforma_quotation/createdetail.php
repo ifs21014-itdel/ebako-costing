@@ -20,7 +20,7 @@
         </tr>
 
         <tr>
-            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>FOB :</label></td>  
+            <td align="right"><label class="labelelement"><span style="color: red;">*&nbsp;</span>Last Quotation FOB Price :</label></td>  
             <td>
                 <input type="hidden" id="quotation_detail_id" name="quotation_detail_id" value=" " />
                 <input type="text" id="quotation_detail_fob" name="quotation_detail_fob" value=" " 
